@@ -1,0 +1,49 @@
+{
+  "comment": "Logical art keys shared by the game (InhArt.cpp), the downloader (tools/assets/fetch_cc0_assets.py) and the Unreal importer (Content/Python/inh_build_art.py). All sources are CC0 (public domain) from Poly Haven. 'prefer' lists asset ids tried in order; if none exist, the downloader searches by 'categories' and 'keywords'.",
+  "root": "/Game/Inheritance",
+  "textureResolution": "2k",
+  "mobileTextureResolution": "1k",
+  "materials": [
+    { "key": "FloorWood",   "master": "Surface", "uvScale": 2.0, "source": { "prefer": ["wood_floor_worn", "old_wood_floor", "wood_floor_deck", "brown_planks_03"], "categories": ["wood", "floor"], "keywords": ["plank", "floor"] } },
+    { "key": "Plaster",     "master": "Surface", "uvScale": 1.5, "source": { "prefer": ["painted_plaster_wall", "plastered_wall", "beige_wall_001"], "categories": ["plaster", "wall"], "keywords": ["plaster"] } },
+    { "key": "PlasterDark", "master": "Surface", "uvScale": 1.5, "tint": [0.62, 0.66, 0.7], "source": { "prefer": ["rough_plaster_broken", "damaged_plaster", "painted_plaster_wall"], "categories": ["plaster"], "keywords": ["plaster", "worn"] } },
+    { "key": "Wood",        "master": "Surface", "uvScale": 1.0, "source": { "prefer": ["wood_table_001", "fine_grained_wood", "oak_veneer_01"], "categories": ["wood"], "keywords": ["wood"] } },
+    { "key": "WoodDark",    "master": "Surface", "uvScale": 1.0, "tint": [0.45, 0.4, 0.38], "source": { "prefer": ["dark_wood", "wood_cabinet_worn_long", "brown_planks_05"], "categories": ["wood"], "keywords": ["dark", "wood"] } },
+    { "key": "Fabric",      "master": "Surface", "uvScale": 2.0, "source": { "prefer": ["fabric_pattern_07", "denim_fabric", "fabric_leather_02"], "categories": ["fabric"], "keywords": ["fabric"] } },
+    { "key": "Linen",       "master": "Surface", "uvScale": 2.0, "source": { "prefer": ["crepe_satin", "cotton_jersey", "fabric_pattern_05"], "categories": ["fabric"], "keywords": ["cloth", "cotton"] } },
+    { "key": "Paper",       "master": "Surface", "uvScale": 1.0, "source": { "prefer": ["paper_0025", "cardboard", "worn_paper"], "categories": ["paper"], "keywords": ["paper"] } },
+    { "key": "Brass",       "master": "Surface", "uvScale": 1.0, "metallic": 1.0, "source": { "prefer": ["metal_plate", "rusty_metal_02", "metal_grate_rusty"], "categories": ["metal"], "keywords": ["brass", "metal"] } },
+    { "key": "Iron",        "master": "Surface", "uvScale": 1.0, "metallic": 1.0, "source": { "prefer": ["rusty_metal_02", "rust_coarse_01", "corrugated_iron"], "categories": ["metal"], "keywords": ["rust", "iron"] } },
+    { "key": "Stone",       "master": "Surface", "uvScale": 2.0, "source": { "prefer": ["castle_wall_slates", "stone_wall", "rock_wall_08"], "categories": ["stone", "wall"], "keywords": ["stone"] } },
+    { "key": "Cobble",      "master": "Surface", "uvScale": 4.0, "source": { "prefer": ["cobblestone_floor_01", "cobblestone_05", "stone_tiles_02"], "categories": ["floor", "stone"], "keywords": ["cobble"] } },
+    { "key": "Brick",       "master": "Surface", "uvScale": 2.0, "source": { "prefer": ["red_brick_03", "brick_wall_001", "old_brick_wall"], "categories": ["brick"], "keywords": ["brick"] } },
+    { "key": "Roof",        "master": "Surface", "uvScale": 3.0, "source": { "prefer": ["roof_slates_02", "clay_roof_tiles", "roof_tiles"], "categories": ["roofing"], "keywords": ["roof", "tile"] } },
+    { "key": "Rock",        "master": "Surface", "uvScale": 3.0, "source": { "prefer": ["rock_boulder_dry", "coast_sand_rocks_02", "aerial_rocks_02"], "categories": ["rock", "terrain"], "keywords": ["rock"] } },
+    { "key": "Sand",        "master": "Surface", "uvScale": 6.0, "source": { "prefer": ["coast_sand_01", "aerial_beach_01", "sand_01"], "categories": ["terrain"], "keywords": ["sand", "beach"] } },
+    { "key": "Glass",       "master": "Glass" },
+    { "key": "Water",       "master": "Water", "source": { "prefer": ["water_ripples"], "categories": [], "keywords": [] } },
+    { "key": "Emissive",    "master": "Emissive" },
+    { "key": "FogCard",     "master": "FogCard" }
+  ],
+  "meshes": [
+    { "key": "Table",   "source": { "prefer": ["wooden_table_02", "WoodenTable_01", "wooden_table_01"], "categories": ["furniture", "table"], "keywords": ["table"] } },
+    { "key": "Chair",   "source": { "prefer": ["WoodenChair_01", "wooden_chair_01", "ArmChair_01"], "categories": ["furniture", "seating"], "keywords": ["chair"] } },
+    { "key": "Bed",     "source": { "prefer": ["GothicBed_01", "bed_01"], "categories": ["furniture"], "keywords": ["bed"] } },
+    { "key": "Shelf",   "source": { "prefer": ["wooden_shelf_01", "Shelf_01", "vintage_cabinet_01"], "categories": ["furniture", "shelves"], "keywords": ["shelf", "cabinet"] } },
+    { "key": "Lantern", "source": { "prefer": ["Lantern_01", "lantern_chandelier_01"], "categories": ["lighting", "props"], "keywords": ["lantern", "lamp"] } },
+    { "key": "Candle",  "source": { "prefer": ["Candle_01", "candle_holder"], "categories": ["props", "lighting"], "keywords": ["candle"] } },
+    { "key": "Books",   "source": { "prefer": ["book_encyclopedia_set_01", "old_books"], "categories": ["props", "decorative"], "keywords": ["book"] } },
+    { "key": "Bottle",  "source": { "prefer": ["brass_vase_01", "wine_bottles_01", "glass_bottle"], "categories": ["props"], "keywords": ["bottle", "vase"] } },
+    { "key": "Vase",    "source": { "prefer": ["antique_ceramic_vase_01", "ceramic_vase_01"], "categories": ["decorative", "props"], "keywords": ["vase"] } },
+    { "key": "Chest",   "source": { "prefer": ["treasure_chest", "vintage_suitcase"], "categories": ["props", "containers"], "keywords": ["chest", "suitcase"] } },
+    { "key": "Crate",   "source": { "prefer": ["wooden_crate_01", "wooden_crate_02"], "categories": ["props", "containers"], "keywords": ["crate"] } },
+    { "key": "Barrel",  "source": { "prefer": ["Barrel_01", "wine_barrel_01"], "categories": ["props", "containers"], "keywords": ["barrel"] } },
+    { "key": "Rowboat", "source": { "prefer": ["wooden_boat", "rowboat", "old_boat"], "categories": ["vehicles", "props"], "keywords": ["boat"] } },
+    { "key": "Bench",   "source": { "prefer": ["park_bench_01", "wooden_bench_01"], "categories": ["furniture", "seating"], "keywords": ["bench"] } },
+    { "key": "Rope",    "source": { "prefer": ["rope_coil", "coiled_rope_01"], "categories": ["props"], "keywords": ["rope"] } }
+  ],
+  "skies": [
+    { "key": "Night", "source": { "prefer": ["moonless_golf", "kloppenheim_02", "satara_night", "dikhololo_night"], "categories": ["night"], "keywords": ["night"] } },
+    { "key": "Dawn",  "source": { "prefer": ["kiara_1_dawn", "spruit_sunrise", "venice_dawn_1"], "categories": ["sunrise-sunset"], "keywords": ["dawn", "sunrise"] } }
+  ]
+}

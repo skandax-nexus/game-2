@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "AudioCaptureCore.h"
+#include "HAL/CriticalSection.h"
 #include <atomic>
 #include "InhVoiceRecorder.generated.h"
 

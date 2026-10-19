@@ -5,6 +5,7 @@
 #include "InhProp.generated.h"
 
 class UPointLightComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 
 UENUM()

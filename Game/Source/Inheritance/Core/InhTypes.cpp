@@ -212,9 +212,9 @@ FInhLife FInhLife::FromJson(const TSharedPtr<FJsonObject>& Json)
 	}
 
 	L.Estate = FInhEstate::FromJson(Obj(Json, TEXT("estate")));
-	if (const TSharedPtr<FJsonObject> Legacy = Obj(Json, TEXT("legacy")))
+	if (const TSharedPtr<FJsonObject> LegacyJson = Obj(Json, TEXT("legacy")))
 	{
-		for (const auto& Pair : Legacy->Values)
+		for (const auto& Pair : LegacyJson->Values)
 		{
 			L.Legacy.Add(Pair.Key, Pair.Value.IsValid() ? Pair.Value->AsString() : FString());
 		}

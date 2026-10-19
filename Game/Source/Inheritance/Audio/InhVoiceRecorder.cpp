@@ -1,6 +1,7 @@
 #include "Audio/InhVoiceRecorder.h"
 #include "Audio/InhWav.h"
 #include "Inheritance.h"
+#include "Misc/ScopeLock.h"
 
 #if PLATFORM_ANDROID
 #include "AndroidPermissionFunctionLibrary.h"
@@ -53,7 +54,7 @@ bool UInhVoiceRecorder::Start(float InMaxSeconds, FText& OutError)
 				{
 					return;
 				}
-				const float* Audio = static_cast<const float*>(InAudio);
+				const float* Pcm = static_cast<const float*>(InAudio);
 				FScopeLock ScopeLock(&Lock);
 				DeviceSampleRate = SampleRate;
 				const int32 MaxSamples = int32(MaxSeconds * SampleRate);
@@ -62,7 +63,7 @@ bool UInhVoiceRecorder::Start(float InMaxSeconds, FText& OutError)
 					float Mono = 0.f;
 					for (int32 C = 0; C < NumChannels; ++C)
 					{
-						Mono += Audio[Frame * NumChannels + C];
+						Mono += Pcm[Frame * NumChannels + C];
 					}
 					Samples.Add(Mono / NumChannels);
 				}

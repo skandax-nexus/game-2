@@ -249,8 +249,8 @@ void AInhRoomBuilder::Tick(float DeltaSeconds)
 void AInhRoomBuilder::SetLifeProgress(float P)
 {
 	// Keyframes: dusk -> deep night -> dawn (the moment the life ends).
-	struct FKey { float At; float Pitch; float Lux; FLinearColor Color; float Sky; };
-	static const FKey Keys[] = {
+	struct FSkyKey { float At; float Pitch; float Lux; FLinearColor Color; float Sky; };
+	static const FSkyKey Keys[] = {
 		{ 0.00f, -9.f, 3.5f, FLinearColor(1.f, 0.55f, 0.30f), 0.8f },
 		{ 0.20f, -35.f, 0.6f, FLinearColor(0.55f, 0.65f, 1.f), 0.35f },
 		{ 0.80f, -40.f, 0.5f, FLinearColor(0.50f, 0.60f, 1.f), 0.30f },
@@ -259,8 +259,8 @@ void AInhRoomBuilder::SetLifeProgress(float P)
 	P = FMath::Clamp(P, 0.f, 1.f);
 	int32 i = 0;
 	while (i < int32(UE_ARRAY_COUNT(Keys)) - 2 && P > Keys[i + 1].At) ++i;
-	const FKey& A = Keys[i];
-	const FKey& B = Keys[i + 1];
+	const FSkyKey& A = Keys[i];
+	const FSkyKey& B = Keys[i + 1];
 	const float T = FMath::SmoothStep(0.f, 1.f, (P - A.At) / FMath::Max(B.At - A.At, KINDA_SMALL_NUMBER));
 
 	Sun->SetWorldRotation(FRotator(FMath::Lerp(A.Pitch, B.Pitch, T), 195.f, 0.f));

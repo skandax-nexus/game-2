@@ -298,7 +298,7 @@ void AInhPlayerController::RunAction(const FString& Type, const FString& Field, 
 
 // --- props --------------------------------------------------------------------------------------
 
-void AInhPlayerController::SelectProp(EInhPropKind Kind, const FString& RefId)
+void AInhPlayerController::SelectProp(EInhPropKind Kind, FString RefId)
 {
 	UInhHudScreen* Hud = Cast<UInhHudScreen>(MainScreen);
 	if (!Hud)

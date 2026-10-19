@@ -13,6 +13,8 @@ class UExponentialHeightFogComponent;
 class UPostProcessComponent;
 class UPointLightComponent;
 class USpotLightComponent;
+class UStaticMesh;
+class UStaticMeshComponent;
 
 /**
  * Builds the inherited room as a lit diorama, with Hollow Bay's harbour and lighthouse outside

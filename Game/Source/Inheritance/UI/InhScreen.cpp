@@ -101,23 +101,23 @@ void UInhScreen::HandleLifeChanged()
 	}
 }
 
-void UInhScreen::Pad(UPanelSlot* Slot, const FMargin& Margin)
+void UInhScreen::Pad(UPanelSlot* InSlot, const FMargin& Margin)
 {
-	if (UVerticalBoxSlot* V = Cast<UVerticalBoxSlot>(Slot))
+	if (UVerticalBoxSlot* V = Cast<UVerticalBoxSlot>(InSlot))
 	{
 		V->SetPadding(Margin);
 		V->SetHorizontalAlignment(HAlign_Fill);
 	}
-	else if (UHorizontalBoxSlot* H = Cast<UHorizontalBoxSlot>(Slot))
+	else if (UHorizontalBoxSlot* H = Cast<UHorizontalBoxSlot>(InSlot))
 	{
 		H->SetPadding(Margin);
 		H->SetVerticalAlignment(VAlign_Center);
 	}
-	else if (UScrollBoxSlot* S = Cast<UScrollBoxSlot>(Slot))
+	else if (UScrollBoxSlot* S = Cast<UScrollBoxSlot>(InSlot))
 	{
 		S->SetPadding(Margin);
 	}
-	else if (UOverlaySlot* O = Cast<UOverlaySlot>(Slot))
+	else if (UOverlaySlot* O = Cast<UOverlaySlot>(InSlot))
 	{
 		O->SetPadding(Margin);
 	}
@@ -160,8 +160,8 @@ UInhButton* UInhScreen::AddButton(UPanelWidget* Parent, const FText& Label, InhS
 {
 	UInhButton* Button = Make<UInhButton>();
 	Button->Configure(Label, Kind, MoveTemp(OnClick), FontSize);
-	UPanelSlot* Slot = Parent->AddChild(Button);
-	if (UHorizontalBoxSlot* H = Cast<UHorizontalBoxSlot>(Slot))
+	UPanelSlot* NewSlot = Parent->AddChild(Button);
+	if (UHorizontalBoxSlot* H = Cast<UHorizontalBoxSlot>(NewSlot))
 	{
 		H->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		H->SetPadding(FMargin(4.f, 0.f));
@@ -169,7 +169,7 @@ UInhButton* UInhScreen::AddButton(UPanelWidget* Parent, const FText& Label, InhS
 	}
 	else
 	{
-		Pad(Slot, FMargin(0.f, 6.f));
+		Pad(NewSlot, FMargin(0.f, 6.f));
 	}
 	return Button;
 }

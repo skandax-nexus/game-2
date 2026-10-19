@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/TextWidgetTypes.h"
 #include "UI/InhStyle.h"
 #include "Core/InhGameSubsystem.h"
@@ -53,7 +54,7 @@ protected:
 	UVerticalBox* AddCard(UPanelWidget* Parent, const FLinearColor& Color = InhStyle::Card);
 	UHorizontalBox* AddRow(UPanelWidget* Parent);
 	void AddSpacer(UPanelWidget* Parent, float Height);
-	static void Pad(UPanelSlot* Slot, const FMargin& Margin);
+	static void Pad(UPanelSlot* InSlot, const FMargin& Margin);
 
 	UInhGameSubsystem* Game() const;
 	AInhPlayerController* Controller() const;

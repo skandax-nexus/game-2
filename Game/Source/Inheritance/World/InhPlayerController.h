@@ -42,7 +42,7 @@ public:
 	void RunAction(const FString& Type, const FString& Field = FString(), const FString& Id = FString());
 	bool IsActionInFlight() const { return bActionInFlight; }
 	void Toast(const FText& Message);
-	void SelectProp(EInhPropKind Kind, const FString& RefId);
+	void SelectProp(EInhPropKind Kind, FString RefId);
 	void ClearSelection();
 
 protected:

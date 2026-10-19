@@ -99,6 +99,16 @@ USoundWaveProcedural* InhWav::CreateSound(UObject* Outer, const TArray<uint8>& W
 	{
 		const uint32 Size = ReadU32(Wav, Offset + 4);
 		const int32 Body = Offset + 8;
+		// Notes come from other players: never trust a chunk size that runs past the file.
+		if (Size > uint32(Wav.Num() - Body))
+		{
+			if (TagIs(Wav, Offset, "data"))
+			{
+				DataOffset = Body;
+				DataBytes = Wav.Num() - Body;
+			}
+			break;
+		}
 		if (TagIs(Wav, Offset, "fmt ") && Body + 16 <= Wav.Num())
 		{
 			Channels = ReadU16(Wav, Body + 2);
@@ -117,6 +127,7 @@ USoundWaveProcedural* InhWav::CreateSound(UObject* Outer, const TArray<uint8>& W
 	{
 		return nullptr;
 	}
+	DataBytes -= DataBytes % (Channels * 2);
 
 	USoundWaveProcedural* Sound = NewObject<USoundWaveProcedural>(Outer);
 	Sound->SetSampleRate(SampleRate);

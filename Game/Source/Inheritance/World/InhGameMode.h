@@ -4,6 +4,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "InhGameMode.generated.h"
 
+/** Builds Hollow Bay at runtime (the room, the harbour and the air) and spawns the cinematic camera at the room. */
 UCLASS()
 class INHERITANCE_API AInhGameMode : public AGameModeBase
 {

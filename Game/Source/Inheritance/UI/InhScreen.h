@@ -16,10 +16,12 @@ class UHorizontalBox;
 class UTextBlock;
 class UPanelWidget;
 class UPanelSlot;
+class UOverlay;
 
 /**
  * Base for every screen. Screens are built entirely in C++ (no Blueprint assets needed),
- * with a dimmed backdrop, safe-zone padding for notches, and a scrolling column.
+ * with a dimmed backdrop (or soft shades at the edges, so a cinematic can play behind),
+ * safe-zone padding for notches, and a scrolling column.
  * Override Build() to fill the column; call Refresh() to rebuild it.
  */
 UCLASS(Abstract)
@@ -64,9 +66,13 @@ protected:
 
 	UPROPERTY() TObjectPtr<UVerticalBox> Content;
 	float BackdropOpacity = 0.88f;
+	/** Peak opacity of a soft dark shade falling from the top edge / rising from the bottom edge (0 = none). */
+	float TopShade = 0.f;
+	float BottomShade = 0.f;
 
 private:
 	void HandleLifeChanged();
+	void AddShade(UOverlay* Root, bool bFromTop, float Peak);
 
 	FDelegateHandle LifeChangedHandle;
 	bool bDirty = false;

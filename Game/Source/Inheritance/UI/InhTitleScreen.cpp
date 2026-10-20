@@ -10,14 +10,38 @@
 
 #define LOCTEXT_NAMESPACE "Inheritance"
 
+namespace
+{
+	/** Lifts text off a moving picture. */
+	void AddTextShadow(UTextBlock* Text)
+	{
+		Text->SetShadowOffset(FVector2D(0.f, 2.f));
+		Text->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.6f));
+	}
+}
+
+UInhTitleScreen::UInhTitleScreen(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	// No dim: the harbour cinematic is the backdrop. A soft shade at the top keeps the title readable. In portrait
+	// everything sits in the upper part and the card carries its own background, so the bottom shade only grounds the
+	// frame and must stay light, or it hides the water and quay of the attract shots.
+	BackdropOpacity = 0.f;
+	TopShade = 0.5f;
+	BottomShade = 0.35f;
+}
+
 void UInhTitleScreen::Build(UVerticalBox* Column)
 {
-	AddSpacer(Column, 80.f);
+	AddSpacer(Column, 64.f);
 	UTextBlock* Title = AddText(Column, LOCTEXT("GameTitle", "INHERITANCE"), 52, InhStyle::Brass, true, ETextJustify::Center);
 	Title->SetFont(InhStyle::Title(52));
-	AddText(Column, LOCTEXT("Tagline", "Every life lasts one day.\nA stranger inherits whatever you leave behind."),
+	AddTextShadow(Title);
+	UTextBlock* Tagline = AddText(Column, LOCTEXT("Tagline", "Every life lasts one day.\nA stranger inherits whatever you leave behind."),
 		21, InhStyle::Text, false, ETextJustify::Center);
-	AddSpacer(Column, 40.f);
+	AddTextShadow(Tagline);
+	// Leave the middle of the screen to the harbour.
+	AddSpacer(Column, 220.f);
 
 	UVerticalBox* Card = AddCard(Column);
 	UInhGameSubsystem* G = Game();
@@ -42,8 +66,9 @@ void UInhTitleScreen::Build(UVerticalBox* Column)
 
 	AddSpacer(Column, 24.f);
 	const UInhBackendSubsystem* Backend = GetGameInstance() ? GetGameInstance()->GetSubsystem<UInhBackendSubsystem>() : nullptr;
-	AddText(Column, FText::Format(LOCTEXT("Server", "Server: {0}"), FText::FromString(Backend ? Backend->GetBaseUrl() : FString())),
+	UTextBlock* Server = AddText(Column, FText::Format(LOCTEXT("Server", "Server: {0}"), FText::FromString(Backend ? Backend->GetBaseUrl() : FString())),
 		13, InhStyle::Muted, false, ETextJustify::Center);
+	AddTextShadow(Server);
 }
 
 void UInhTitleScreen::Begin()

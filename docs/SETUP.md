@@ -48,7 +48,7 @@ It installs Homebrew, Git, Node, Xcode (from the App Store), Android Studio and 
    ```
    You should see `Hollow Bay is listening on http://0.0.0.0:8080`. `ALLOW_EARLY_SUNRISE=1` turns on the **Skip to sunrise** button so you can test a whole life in a few minutes. Leave it off in production.
 2. **Open the project.** Double-click `Game/Inheritance.uproject`. If your engine version differs, right-click it, choose *Switch Unreal Engine version*, and pick yours. Answer **Yes** to "rebuild modules".
-3. **Press Play** (Alt+P). The mouse acts as a finger: drag to orbit, scroll to zoom, click to tap.
+3. **Press Play** (Alt+P). The mouse acts as a finger: drag to orbit, scroll to zoom, click to tap. Click (or press Space) to skip a cinematic.
 
 ### Testing inheritance with two players
 
@@ -57,6 +57,22 @@ Inheritance passes estates between *different* players. To see it work on one ma
 1. Play a life, record a voice note in **Legacy**, then press **Skip to sunrise**.
 2. Stop Play. Delete `Game/Saved/SaveGames/InheritanceProfile.sav` so the next session registers as a new player.
 3. Press Play again. The new player inherits your previous estate and can play your voice note.
+
+## Building the art (optional, recommended)
+
+Without it the game runs fine, but everything is drawn with simple flat-coloured shapes. One command downloads free CC0 photoscanned art (wood floors, plaster, cobbles, brick, furniture, crates, boats, night and dawn skies) from [Poly Haven](https://polyhaven.com) and imports it into the project. **Close the editor first**: the import runs headless.
+
+```powershell
+# Windows (PowerShell, from the repository folder)
+.\tools\assets\build-art.ps1                         # or: -EnginePath "D:\Epic\UE_5.5"
+```
+
+```bash
+# macOS / Linux
+tools/assets/build-art.sh                           # or: --engine "/Users/Shared/Epic Games/UE_5.5"
+```
+
+It needs Python 3.9+ and a few hundred MB of downloads. It builds the editor module first if you haven't opened the project yet, and the first import compiles shaders, so allow some time. Re-running it is safe: finished downloads are skipped. Then open the project and press Play. If Poly Haven can't be reached, the import still finishes with flat materials. See [ART_PIPELINE.md](ART_PIPELINE.md) for options, swapping in your own or Fab assets, and troubleshooting.
 
 ## Changing settings
 
@@ -80,4 +96,5 @@ Server environment variables:
 
 - **"Can't reach Hollow Bay"** on the title screen means the server isn't running, or the Backend Url is wrong. On a phone, make sure it's on the same Wi-Fi and that Windows Firewall allows Node.js on private networks.
 - **"Could not be compiled. Try rebuilding from source manually."** Open `Game/Inheritance.sln` (Windows) or the Xcode workspace (Mac), build the `InheritanceEditor` target, and read the first error. The code hasn't been through a compiler yet, so a few small fixes may be needed.
+- **The world still looks flat after the art build.** Check the end of the import log for lines starting `[InhArt]`, and the Output Log on Play for "Art pipeline output found" or "No art under /Game/Inheritance yet". See [ART_PIPELINE.md](ART_PIPELINE.md#troubleshooting).
 - **Android packaging fails on SDK/NDK.** Re-run `Engine\Extras\Android\SetupAndroid.bat`, restart, and check *Project Settings → Platforms → Android SDK*.

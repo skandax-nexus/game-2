@@ -10,8 +10,8 @@
  *   Back wall at X = 400 with the window opening Y -60..100, Z 110..230.
  *   Left wall at Y = -300. The front (-X) and right (+Y) sides are open to the camera.
  *   Below the room is the market building down to street level, then a cobbled quay street,
- *   the quay edge, and the sea. The lighthouse stands on a breakwater across the water;
- *   the rest of the town climbs the hills on the far shore.
+ *   the quay edge, and the sea. The lighthouse stands on a breakwater out in the harbour;
+ *   the rest of the town climbs the hills on the far shore, well over a hundred metres away.
  */
 namespace InhLayout
 {
@@ -47,10 +47,14 @@ namespace InhLayout
 	inline const FVector LighthouseBase(2600.f, 950.f, SeaLevel);
 	inline constexpr float LighthouseHeight = 1500.f;
 	inline const FVector LighthouseLamp(2600.f, 950.f, SeaLevel + 1450.f);
-	/** The far shore where the rest of Hollow Bay climbs the hills. */
-	inline constexpr float FarShoreX = 4200.f;
-	inline constexpr float FarShoreMinY = -5000.f;
-	inline constexpr float FarShoreMaxY = 5000.f;
+	/**
+	 * The far shore where the rest of Hollow Bay climbs the hills, some 130 m across the bay: far enough for the fog to
+	 * soften it with distance and for its windows to read as tiny points of light. The harbour builder's hills are sized
+	 * for this distance, with the harbour mouth between them framing the sunrise from our window.
+	 */
+	inline constexpr float FarShoreX = 13700.f;
+	inline constexpr float FarShoreMinY = -17500.f;
+	inline constexpr float FarShoreMaxY = 17500.f;
 
 	// --- the Ferryman's route at sunrise: in from the south, past the steps, out to sea ---
 	inline const FVector FerrymanStart(1500.f, -2400.f, SeaLevel);

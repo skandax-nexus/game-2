@@ -42,6 +42,14 @@ void UInhScreen::BuildFrame()
 	UOverlaySlot* BackdropSlot = Root->AddChildToOverlay(Backdrop);
 	BackdropSlot->SetHorizontalAlignment(HAlign_Fill);
 	BackdropSlot->SetVerticalAlignment(VAlign_Fill);
+	if (TopShade > 0.f)
+	{
+		AddShade(Root, true, TopShade);
+	}
+	if (BottomShade > 0.f)
+	{
+		AddShade(Root, false, BottomShade);
+	}
 
 	USafeZone* Safe = Make<USafeZone>();
 	UOverlaySlot* SafeSlot = Root->AddChildToOverlay(Safe);
@@ -62,6 +70,43 @@ void UInhScreen::BuildFrame()
 
 	Content = Make<UVerticalBox>();
 	Width->AddChild(Content);
+}
+
+void UInhScreen::AddShade(UOverlay* Root, bool bFromTop, float Peak)
+{
+	// Slate has no gradient brush without a texture, so the shade is a stack of thin bands, each a little darker towards
+	// the edge. Over a moving picture the steps don't show.
+	constexpr int32 NumBands = 24;
+	const float Share = bFromTop ? 0.32f : 0.62f;
+	UVerticalBox* Bands = Make<UVerticalBox>();
+	Bands->SetVisibility(ESlateVisibility::HitTestInvisible);
+	UOverlaySlot* BandsSlot = Root->AddChildToOverlay(Bands);
+	BandsSlot->SetHorizontalAlignment(HAlign_Fill);
+	BandsSlot->SetVerticalAlignment(VAlign_Fill);
+
+	auto AddBand = [this, Bands](float Weight, float Alpha)
+	{
+		UBorder* Band = Make<UBorder>();
+		Band->SetBrush(FSlateColorBrush(FLinearColor(InhStyle::Backdrop.R, InhStyle::Backdrop.G, InhStyle::Backdrop.B, Alpha)));
+		Band->SetPadding(FMargin(0.f));
+		FSlateChildSize Size(ESlateSizeRule::Fill);
+		Size.Value = Weight;
+		Bands->AddChildToVerticalBox(Band)->SetSize(Size);
+	};
+	if (!bFromTop)
+	{
+		AddBand(1.f - Share, 0.f);
+	}
+	for (int32 i = 0; i < NumBands; ++i)
+	{
+		// 0 at the screen edge, 1 where the shade has faded out.
+		const float FromEdge = (bFromTop ? i + 0.5f : NumBands - i - 0.5f) / NumBands;
+		AddBand(Share / NumBands, Peak * (1.f - FMath::SmoothStep(0.f, 1.f, FromEdge)));
+	}
+	if (bFromTop)
+	{
+		AddBand(1.f - Share, 0.f);
+	}
 }
 
 void UInhScreen::NativeConstruct()

@@ -20,6 +20,10 @@ Game/.vscode/
 # Packaged builds
 Builds/
 
+# Python bytecode (editor scripts in Game/Content/Python, tools/assets)
+__pycache__/
+*.pyc
+
 # Server
 server/node_modules/
 server/data/

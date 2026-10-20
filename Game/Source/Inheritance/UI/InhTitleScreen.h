@@ -6,12 +6,15 @@
 
 class UEditableTextBox;
 
+/** The title over the harbour at night: the attract cinematic plays behind it, so it only shades the edges. */
 UCLASS()
 class INHERITANCE_API UInhTitleScreen : public UInhScreen
 {
 	GENERATED_BODY()
 
 public:
+	UInhTitleScreen(const FObjectInitializer& ObjectInitializer);
+
 	void ShowError(const FText& Error);
 
 protected:

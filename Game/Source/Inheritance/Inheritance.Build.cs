@@ -20,6 +20,8 @@ public class Inheritance : ModuleRules
 			"Json",
 			"DeveloperSettings",
 			"AudioCaptureCore",
+			// UCineCameraComponent: filmback, lenses and physically based depth of field for the camera pawn.
+			"CinematicCamera",
 		});
 
 		if (Target.Platform == UnrealTargetPlatform.Android)

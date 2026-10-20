@@ -3,7 +3,7 @@
 The project is already configured for both (`Game/Config/DefaultEngine.ini`):
 
 - **Portrait**, full screen, notch-safe UI
-- **Android:** package `com.skandaxnexus.inheritance`, arm64, Vulkan with OpenGL ES 3.1 fallback, min SDK 26 (Android 8), target SDK 34, microphone permission
+- **Android:** package `com.skandaxnexus.inheritance`, arm64, Vulkan with OpenGL ES 3.1 fallback, min SDK 26 (Android 8), target SDK 35 (what Google Play requires), microphone permission
 - **iOS:** bundle `com.skandaxnexus.inheritance`, Metal, iPhone and iPad, microphone usage text
 - **Mobile deferred renderer** with HDR, TAA and dynamic shadows, plus per-device quality profiles (`DefaultDeviceProfiles.ini`)
 

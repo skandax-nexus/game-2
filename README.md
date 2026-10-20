@@ -15,8 +15,13 @@ The design document this implements is summarised in [`docs/ARCHITECTURE.md`](do
 | `server/` | The online backend (Node.js 22, no dependencies). It handles lives, sunrise timing, passing an estate to a stranger, voice notes, factions and the Ledger. It comes with 18 automated tests. |
 | `tools/setup/` | One-command installers for everything you need: `setup-windows.ps1` (for Android) and `setup-macos.sh` (for iOS). |
 | `tools/build/` | Scripts that package the game for Android (`.apk`) and iOS (`.ipa`). |
+| `web-preview/` | A playable browser version of the game (three.js, one HTML file) built from the same story file and rules. |
 | `tools/assets/` | The art pipeline: one command downloads free CC0 photoscanned art from Poly Haven and imports it into the project (`build-art.sh` / `build-art.ps1`). |
 | `docs/` | Setup, architecture, mobile builds, art pipeline and roadmap. |
+
+## Try it in a browser
+
+`web-preview/index.html` is a playable browser version: the cinematic fly-in, the Reading of the Will, the room, your ten actions, your legacy and the sunrise, using the same story file and rules. Open it in any modern browser. See [web-preview/README.md](web-preview/README.md) for how it differs from the phone game.
 
 ## Quick start
 

@@ -50,11 +50,26 @@ namespace InhShapes
 
 	void SetEmissive(UStaticMeshComponent* Part, const FLinearColor& Color, float Strength);
 
-	/** Instanced variant for repeated pieces: one component, many transforms. Material from MaterialKey or flat FallbackColor. */
+	/**
+	 * Instanced variant for repeated pieces: one component, many transforms. Material from MaterialKey or flat FallbackColor.
+	 * Check CanInstance(MaterialKey) first wherever the look may be a flat colour.
+	 */
 	UInstancedStaticMeshComponent* AddInstanced(AActor* Owner, USceneComponent* Parent, UStaticMesh* Mesh, FName MaterialKey,
 		const FLinearColor& FallbackColor, bool bCollide = false);
 
-	/** Emissive instanced variant (e.g. all lit windows of the town in one draw call). */
+	/** Emissive instanced variant (e.g. all lit windows of the town in one draw call). See CanInstanceEmissive. */
 	UInstancedStaticMeshComponent* AddInstancedEmissive(AActor* Owner, USceneComponent* Parent, UStaticMesh* Mesh,
 		const FLinearColor& Color, float Strength);
+
+	/**
+	 * Whether AddInstanced can draw MaterialKey's look: its art material, or the flat colour when the key has none
+	 * installed. Always true in the editor, which sets a missing usage flag on the fly. A cooked game can't, and draws
+	 * instances whose material wasn't saved "Used with Instanced Static Meshes" with the default grid material. The art
+	 * masters have the flag; the engine's basic shape material behind the flat colours may not. When this is false,
+	 * build the pieces one by one (AddSurface, same transforms) or, for numerous decoration, leave them out.
+	 */
+	bool CanInstance(FName MaterialKey);
+
+	/** The same for AddInstancedEmissive (MI_Emissive, or the flat colour without the art). */
+	bool CanInstanceEmissive();
 }

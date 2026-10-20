@@ -134,7 +134,9 @@ namespace
 		const FVector Pane = WindowPane();
 		const float ToWindowSeconds = 3.5f;
 		const float LeanOutSeconds = 3.f;
-		const float FindBoatSeconds = 1.75f;
+		// The 3.8 m drop from Outside to OverStreet starts and ends at rest, so it gets enough time not to whip (peak
+		// ~3 m/s, panning under 30 degrees a second); the follow after it hardly moves the camera, so it is the shorter.
+		const float FindBoatSeconds = 2.25f;
 		const float FollowSeconds = InhCinematics::SunriseFerrymanPassTime - (ToWindowSeconds + LeanOutSeconds + FindBoatSeconds);
 		const float HorizonSeconds = 3.5f;
 

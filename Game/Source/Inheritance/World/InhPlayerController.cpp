@@ -37,14 +37,19 @@ namespace
 	constexpr float SkipFadeSeconds = 0.3f;
 	/** The Sunrise cinematic brings the dawn up over this long, ending on full daybreak. */
 	constexpr float DawnRiseSeconds = 11.f;
-	/** Where the dawn rise starts at the latest, so even a life skipped to sunrise sees the sun come up. */
-	constexpr float DawnRiseFrom = 0.86f;
+	/**
+	 * Where the dawn rise starts at the latest, so even a life skipped to sunrise sees the sun come up. A life being lived
+	 * holds the world's clock here (see LivingProgress): the dawn itself only ever comes up in the Sunrise cinematic.
+	 * It is the last of the full moonlight (AInhRoomBuilder::SetLifeProgress fades the moon from here), so a life's last
+	 * stretch waits in a moonlit night rather than the near-black moonset, and the moon fades in the cinematic instead.
+	 */
+	constexpr float DawnRiseFrom = 0.8f;
 	/** The Sunrise ends in a fade to this warm white; the sunrise screen fades it away onto the dawn. */
 	const FLinearColor DawnWhite(1.f, 0.95f, 0.88f);
 
 	/**
 	 * Hollow Bay's weather. The server has none, so each life's id decides it: one night in three brings a shower
-	 * somewhere in the small hours, always gone again before the dawn.
+	 * somewhere in the small hours, always gone again before the clock stops to wait for the dawn (DawnRiseFrom).
 	 */
 	float RainFor(const FInhLife& Life, float Progress)
 	{
@@ -62,8 +67,18 @@ namespace
 		const float Strength = 0.35f + float((Hash >> 16) % 60) / 100.f;
 		const float In = FMath::SmoothStep(Start, Start + 0.05f, Progress);
 		const float Out = 1.f - FMath::SmoothStep(Start + Length, Start + Length + 0.05f, Progress);
-		const float BeforeDawn = 1.f - FMath::SmoothStep(0.85f, 0.9f, Progress);
+		const float BeforeDawn = 1.f - FMath::SmoothStep(DawnRiseFrom - 0.06f, DawnRiseFrom - 0.01f, Progress);
 		return Strength * In * Out * BeforeDawn;
+	}
+
+	/**
+	 * The world's clock while a life is lived: it follows the night but stops just short of the dawn, so the Sunrise
+	 * cinematic always gets to bring the sun up (the life's last stretch, and the wait for the server to end it, would
+	 * otherwise have it up already). Any other life is shown as it is.
+	 */
+	float LivingProgress(const FInhLife& Life)
+	{
+		return Life.IsAlive() ? FMath::Min(Life.Progress(), DawnRiseFrom) : Life.Progress();
 	}
 }
 
@@ -428,7 +443,7 @@ void AInhPlayerController::RefreshRoom()
 
 	const FString SelectedKey = SelectedProp.IsValid() ? PropKey(SelectedProp->GetKind(), SelectedProp->GetRefId()) : FString();
 	Room->ShowLife(Life);
-	SetWorldProgress(Life.Progress());
+	SetWorldProgress(LivingProgress(Life));
 
 	SelectedProp = nullptr;
 	for (TActorIterator<AInhProp> It(GetWorld()); It; ++It)
@@ -454,7 +469,7 @@ void AInhPlayerController::TickClock()
 	{
 		return;
 	}
-	SetWorldProgress(Life.Progress());
+	SetWorldProgress(LivingProgress(Life));
 	if (UInhHudScreen* Hud = Cast<UInhHudScreen>(MainScreen))
 	{
 		Hud->UpdateClock();
@@ -627,7 +642,8 @@ void AInhPlayerController::StageCinematic(EInhCinematic Which, float Seconds)
 			Harbour->PlayFerryman(AInhHarbourBuilder::FerrymanDurationFor(InhCinematics::SunriseFerrymanPassTime));
 			Harbour->ShowMara(true);
 		}
-		// The dawn rises through the cinematic (it also rings the ambience's sunrise bell on the way past 0.9).
+		// The dawn rises through the cinematic from where the life held the clock (LivingProgress), and rings the
+		// ambience's sunrise bell on the way past 0.9.
 		DawnFrom = FMath::Max(WorldProgress, DawnRiseFrom);
 		DawnStartTime = GetWorld()->GetTimeSeconds();
 		bDawnRising = true;

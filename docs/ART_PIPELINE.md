@@ -33,6 +33,8 @@ The script does three things:
 
 Then open `Game/Inheritance.uproject` and press Play.
 
+Build the art before you package for a phone, too: `tools/build/package-android.bat` and `tools/build/package-ios.sh` stop when it is missing (see [Packaged builds](#packaged-builds)).
+
 | Option (`.sh` / `.ps1`) | What it does |
 | --- | --- |
 | `--engine <dir>` / `-EnginePath <dir>` | Engine folder that contains `Engine/`. Defaults to `$UE_ROOT`, else the launcher's install folder for 5.6 (`UE_VERSION=5.5` / `-EngineVersion 5.5` changes the version). `UE_EDITOR_CMD` points at the editor executable directly. |
@@ -64,7 +66,7 @@ If Poly Haven can't be reached (offline, or a proxy blocks `api.polyhaven.com`),
 | `HDRI_<Key>` | `/Game/Inheritance/Sky` | `TextureCube` skies (`Night`, `Dawn`) for sky lights and reflections. |
 | Textures | `/Game/Inheritance/Textures`, `/Game/Inheritance/Meshes/Textures` | Colour maps are sRGB; normal maps use `TC_Normalmap` with the green channel flipped from OpenGL; ARM, roughness and AO maps are linear `TC_Masks`. |
 
-`/Game/Inheritance` is always cooked (`DirectoriesToAlwaysCook` in `DefaultGame.ini`), because the game loads these assets by path.
+`/Game/Inheritance` is always cooked (`DirectoriesToAlwaysCook` in `DefaultGame.ini`), because the game loads these assets by path. So that nothing stale ships, each run deletes what earlier runs left in `Textures`, `Meshes/Textures` and `Meshes/Materials` that nothing references any more (2k textures after a `--resolution 1k` rebuild, a swapped model's extra material instances, a roughness map once an ARM map replaces it), and logs each one. An `--only` run removes only those keys' own leftovers, and a run in which a key failed removes nothing. `MI_<Key>`, `SM_<Key>`, `HDRI_<Key>` and the masters are never deleted. Keep your own assets out of those three folders.
 
 ### How the game uses it
 
@@ -114,7 +116,7 @@ Everything is addressed by the keys in [`Game/Content/Data/Art/ArtManifest.json`
 { "key": "Crate", "unrealAsset": "/Game/Fab/Megascans/3D/Wooden_Crate/SM_Wooden_Crate", ... }
 ```
 
-For a material, `MI_<Key>` becomes an instance of that material. For a mesh or sky, it's duplicated to `SM_<Key>` / `HDRI_<Key>`. Megascans materials use the mesh's UVs rather than world-aligned mapping, so they suit meshes better than the code-built walls and floors; for surfaces, prefer downloading the Megascans texture set into `Game/RawAssets/Custom/<Key>/`. Use the mobile or low LOD variant and keep Nanite off.
+For a material, `MI_<Key>` becomes an instance of that material. Tick *Used with Instanced Static Meshes* (Details → Usage) on the material it is ultimately based on: most of the town is instanced, and a packaged build draws instances of a material without that flag with the default grid material. For a mesh or sky, it's duplicated to `SM_<Key>` / `HDRI_<Key>`. Megascans materials use the mesh's UVs rather than world-aligned mapping, so they suit meshes better than the code-built walls and floors; for surfaces, prefer downloading the Megascans texture set into `Game/RawAssets/Custom/<Key>/`. Use the mobile or low LOD variant and keep Nanite off.
 
 **A new key.** Add an entry to the manifest, re-run the art build, and call `InhArt::Material("MyKey")` / `InhShapes::AddArtMesh(..., "MyKey", ...)` from code with a fallback.
 
@@ -134,6 +136,16 @@ The importer authors the masters with exactly these parameters (code and instanc
 
 When the art isn't installed, `InhShapes` uses the engine's `BasicShapeMaterial` with a flat `Color`; emissive parts show their colour without glowing.
 
+### Packaged builds
+
+A packaged game can't compile shaders, so it draws an instanced mesh with the default grey grid material unless the mesh's material was saved with *Used with Instanced Static Meshes*. The masters have that flag. The engine's `BasicShapeMaterial` behind the flat colours may not, and the editor sets a missing flag on the fly, so Play in the editor never shows the problem. `InhShapes::CanInstance(Key)` tells the builders when a look can't be instanced in the running build, and they then:
+
+- build those pieces of the room one by one (about seventy components at most), at the same place and size;
+- build the harbour's flat-only pieces (dark window glass, the weed at the tide line) one by one, and leave the gulls out;
+- without the art, also leave out the dust and the rain. The rest of the town is thousands of pieces, far too many for a component each, so it stays instanced and shows the grid material, and the log says so once.
+
+With the art built, a packaged build looks as it does in the editor. That is why the packaging scripts stop when `Game/Content/Inheritance/Materials/MI_FloorWood.uasset` is missing; add `--allow-no-art` to package anyway (see [MOBILE.md](MOBILE.md)). The editor's *Platforms → Launch* doesn't check, so build the art before using it as well.
+
 ## Mobile budgets
 
 The target is a mid-range phone (Android Vulkan / ES3.1, iOS Metal, mobile deferred renderer):
@@ -151,7 +163,7 @@ The target is a mid-range phone (Android Vulkan / ES3.1, iOS Metal, mobile defer
   ```
 
   Or download smaller files with `--resolution 1k`.
-- **Shaders:** every master has the instanced-mesh usage flag set (a cooked game otherwise shows the default material on instanced meshes). The water is opaque, and glass and fog are the only translucent materials; keep their cards few and small on screen.
+- **Shaders:** every master has the instanced-mesh usage flag set (a cooked game otherwise shows the default material on instanced meshes; see [Packaged builds](#packaged-builds) for the flat colours). The water is opaque, and glass and fog are the only translucent materials; keep their cards few and small on screen.
 - **Lights:** at most 4 shadow-casting lights. Emissive parts never cast shadows.
 - **Volumetric fog** only runs on high-end and desktop; mobile falls back to height fog automatically.
 
@@ -163,3 +175,4 @@ The target is a mid-range phone (Android Vulkan / ES3.1, iOS Metal, mobile defer
 - **"imported as N separate meshes; using the largest"**: that model is made of several objects. Merge them in Blender and drop the result in `Game/RawAssets/Custom/<Key>/`, or choose another asset.
 - **Something looks flat**: the end of the import log lists keys that got the flat fallback and any problems, all prefixed `[InhArt]`.
 - **Nothing changed in the editor after an import**: press Play again. The art lookups retry a few seconds after a miss.
+- **A grey checkerboard town on the phone, but not in the editor**: the build was packaged without the art, or an art key points at a Fab material without *Used with Instanced Static Meshes*. The game log names the material. Build the art (or tick the flag) and package again; see [Packaged builds](#packaged-builds).

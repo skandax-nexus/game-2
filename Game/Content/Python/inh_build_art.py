@@ -9,9 +9,13 @@ which is where the game looks (Source/Inheritance/World/InhArt.cpp):
   /Game/Inheritance/Sky/HDRI_<Key>            HDRI skies as TextureCube
   /Game/Inheritance/Textures/...              the textures they use
 
+/Game/Inheritance is always cooked, so each run also deletes what earlier runs left in Textures, Meshes/Textures and
+Meshes/Materials that nothing references any more (an --only run: just those keys' own leftovers).
+
 Run it inside the editor (Tools > Execute Python Script...) or headless:
-  UnrealEditor-Cmd <repo>/Game/Inheritance.uproject -run=pythonscript -script="<repo>/Game/Content/Python/inh_build_art.py"
-tools/assets/build-art.sh / build-art.ps1 download the assets first and then run exactly that.
+  UnrealEditor-Cmd <repo>/Game/Inheritance.uproject -run=pythonscript -script=inh_build_art.py
+(the bare file name is found on the Python plugin's path, which holds <Project>/Content/Python; a full path breaks
+when it contains spaces). tools/assets/build-art.sh / build-art.ps1 download the assets first and then run exactly that.
 
 Options (arguments after the script path, or environment variables for the headless run):
   --only FloorWood,Table   INH_ART_ONLY      rebuild only these keys (masters and built-in textures always rebuild)
@@ -437,6 +441,30 @@ def parse_only(values) -> set:
     return keys
 
 
+def key_asset_pattern(keys):
+    """Matches the texture and mesh-material names a key's build writes (T_<Key>_ORM, T_SM_<Key>_0_Normal,
+    MI_SM_<Key>_2, ...) and no other key's, so an --only run prunes just its own keys' leftovers."""
+    alternatives = "|".join(re.escape(key) for key in sorted(set(keys)) if key)
+    if not alternatives:
+        return re.compile(r"(?!)")  # matches nothing
+    return re.compile(r"^(?:T_(?:{0})_(?:BaseColor|Normal|ORM|Roughness)|T_SM_(?:{0})_\d+_(?:BaseColor|Normal|ORM)"
+                      r"|MI_SM_(?:{0})_\d+)$".format(alternatives), re.IGNORECASE)
+
+
+def unreferenced(referencers: dict) -> set:
+    """{candidate: packages referencing it} -> the candidates nothing but other such candidates uses. A leftover
+    material doesn't keep its leftover textures alive, while a referenced one keeps everything it uses."""
+    doomed = set(referencers)
+    changed = True
+    while changed:
+        changed = False
+        for package in sorted(doomed):
+            if referencers[package] - doomed - {package}:
+                doomed.discard(package)
+                changed = True
+    return doomed
+
+
 # =============================================================================================
 # Unreal helpers
 # =============================================================================================
@@ -456,6 +484,8 @@ STATS = BuildStats()
 # Scan files several Surface keys share (set by build() from the whole manifest) and what each imported as this run.
 SHARED_FILES = set()
 SHARED_TEXTURES = {}
+# Lower-cased package paths of every asset this run saved; prune_leftovers() never deletes these.
+WRITTEN = set()
 
 
 def log(message: str):
@@ -520,6 +550,7 @@ def package_of(asset) -> str:
 
 def save(asset):
     try:
+        WRITTEN.add(package_of(asset).lower())
         assets().save_loaded_asset(asset, False)
     except Exception as error:
         STATS.problem("could not save %s: %s" % (asset.get_path_name(), error))
@@ -1068,9 +1099,19 @@ def build_material(entry: dict, files: dict, masters: dict):
 # Meshes
 # ---------------------------------------------------------------------------------------------
 
+def interchange_imports_fbx() -> bool:
+    """Whether Interchange rather than the legacy FBX importer takes .fbx files (the default from UE 5.5, switched by
+    this console variable). Each reads its own options type, so the merge setting goes in the one that runs."""
+    try:
+        return bool(unreal.SystemLibrary.get_console_variable_bool_value("Interchange.FeatureFlags.Import.FBX"))
+    except Exception:
+        return False
+
+
 def mesh_import_options(path: Path):
     """Ask the importer to merge a model's parts into one static mesh (SM_<Key> is a single asset)."""
-    if path.suffix.lower() == ".fbx" and hasattr(unreal, "FbxImportUI"):
+    interchange = hasattr(unreal, "InterchangeGenericAssetsPipeline")
+    if path.suffix.lower() == ".fbx" and hasattr(unreal, "FbxImportUI") and not (interchange and interchange_imports_fbx()):
         ui = unreal.FbxImportUI()
         set_props(ui, quiet=True, import_mesh=True, import_as_skeletal=False, import_materials=True, import_textures=True,
                   import_animations=False, create_physics_asset=False, automated_import_should_detect_type=False,
@@ -1080,13 +1121,19 @@ def mesh_import_options(path: Path):
         except Exception:
             pass
         return ui
-    if hasattr(unreal, "InterchangeGenericAssetsPipeline"):
+    if interchange:
         try:
             pipeline = unreal.InterchangeGenericAssetsPipeline()
             set_props(pipeline.get_editor_property("mesh_pipeline"), quiet=True, combine_static_meshes=True)
-            return pipeline
         except Exception:
             return None
+        try:
+            # Like FbxImportUI's import_as_skeletal=False: a rigged model still comes out as a static mesh.
+            set_props(pipeline.get_editor_property("common_meshes_properties"), quiet=True,
+                      force_all_mesh_as_type=enum_value("InterchangeForceMeshType", "IFMT_STATIC_MESH"))
+        except Exception:
+            pass
+        return pipeline
     return None
 
 
@@ -1157,13 +1204,17 @@ def first_type(*names):
 
 
 def triangle_count(mesh) -> int:
-    for method in ("get_num_triangles",):
-        if hasattr(mesh, method):
-            try:
-                return int(getattr(mesh, method)(0))
-            except Exception:
-                pass
-    return 0
+    """LOD 0's triangles from the render data, else from the source mesh description; -1 if neither can be read."""
+    readers = (lambda: mesh.get_num_triangles(0),
+               lambda: mesh.get_static_mesh_description(0).get_triangle_count())
+    for read in readers:
+        try:
+            count = int(read())
+        except Exception:
+            continue
+        if count > 0:
+            return count
+    return -1
 
 
 def prepare_mesh(mesh, generate_lods: bool = True, collision: bool = True):
@@ -1199,6 +1250,9 @@ def prepare_mesh(mesh, generate_lods: bool = True, collision: bool = True):
         else:
             try:
                 triangles = triangle_count(mesh)
+                if triangles < 0:
+                    STATS.problem("%s: triangle count unreadable, the %d-triangle LOD 0 cap is not applied"
+                                  % (mesh.get_name(), MAX_MESH_TRIANGLES))
                 lod0 = min(1.0, MAX_MESH_TRIANGLES / float(triangles)) if triangles > MAX_MESH_TRIANGLES else 1.0
                 settings = []
                 for share, screen in ((1.0, 1.0), (0.5, 0.45), (0.25, 0.2), (0.1, 0.08)):
@@ -1364,6 +1418,51 @@ def build_sky(entry: dict, files: dict):
 
 
 # ---------------------------------------------------------------------------------------------
+# Leftovers
+# ---------------------------------------------------------------------------------------------
+
+# Folders only this script writes and only other assets reference (the game loads MI_, SM_ and HDRI_ by path, so
+# their folders, the masters and Textures/Builtin are never pruned). Materials first: their textures go after them.
+PRUNED_FOLDERS = (MESH_MATERIALS, MESH_TEXTURES, TEXTURES)
+
+
+def prune_leftovers(pattern=None) -> int:
+    """Deletes what earlier runs left in the always-cooked PRUNED_FOLDERS that nothing uses any more, so it doesn't
+    ship: T_<file>_2k after a 1k rebuild, MI_SM_<Key>_3 after a swap to a simpler model, T_<Key>_Roughness once an
+    ARM map arrives. A full run (pattern None) looks at everything there it didn't write, an --only run just at the
+    names pattern matches. Anything still referenced stays, with whatever it uses."""
+    try:
+        # Dependencies as saved by this run, not as the scan at the start found them.
+        unreal.AssetRegistryHelpers.get_asset_registry().scan_paths_synchronous([ROOT], True)
+    except Exception:
+        pass
+    candidates = []
+    for folder in PRUNED_FOLDERS:
+        if not assets().does_directory_exist(folder):
+            continue
+        for path in assets().list_assets(folder, False, False):
+            package = str(path).split(".")[0]
+            if package.lower() not in WRITTEN and (pattern is None or pattern.match(package.rsplit("/", 1)[-1])):
+                candidates.append(package)
+    referencers = {}
+    for package in candidates:
+        try:
+            # True: loads the referencers to confirm, so a reference this run replaced doesn't count.
+            found = assets().find_package_referencers_for_asset(package, True) or []
+        except Exception as error:
+            warn("could not check what uses %s (%s); kept" % (package, error))
+            continue
+        referencers[package.lower()] = {str(p).split(".")[0].lower() for p in found}
+    doomed = unreferenced(referencers)
+    removed = 0
+    for package in candidates:
+        if package.lower() in doomed and delete(package):
+            log("removed %s, an earlier build's leftover that nothing uses" % package)
+            removed += 1
+    return removed
+
+
+# ---------------------------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------------------------
 
@@ -1422,6 +1521,7 @@ def build(only: set, lock_override: str = "") -> int:
     SHARED_FILES.clear()
     SHARED_FILES.update(shared_texture_files(manifest.get("materials") or [], lock_assets, lock_dir, custom_root))
     SHARED_TEXTURES.clear()
+    WRITTEN.clear()
 
     if only and not exists(MATERIALS + "/MI_FloorWood"):
         # InhArt treats MI_FloorWood as "the art is installed"; without it the game would ignore everything else.
@@ -1435,6 +1535,7 @@ def build(only: set, lock_override: str = "") -> int:
     generated = [e for e in manifest.get("generatedMeshes") or [] if wanted(e)]
     skies = [e for e in manifest.get("skies") or [] if wanted(e)]
     progress = Progress(2 + len(materials) + len(meshes) + len(generated) + len(skies))
+    failed = 0
     try:
         progress.step("Built-in textures")
         builtin = build_builtin_textures(work_dir)
@@ -1457,6 +1558,7 @@ def build(only: set, lock_override: str = "") -> int:
                 else:
                     build_sky(entry, files)
             except Exception as error:  # one broken asset must not stop the rest
+                failed += 1
                 STATS.problem("%s %s failed: %s" % (kind, key, error))
     finally:
         progress.close()
@@ -1470,6 +1572,17 @@ def build(only: set, lock_override: str = "") -> int:
         assets().save_directory(ROOT, False, True)
     except Exception as error:
         STATS.problem("saving %s failed: %s" % (ROOT, error))
+
+    if failed:
+        warn("leftovers from earlier builds kept: %d job(s) failed, so the run doesn't know all it uses" % failed)
+    else:
+        rebuilt = [e.get("key", "") for e in materials + meshes + generated + skies]
+        try:
+            removed = prune_leftovers(key_asset_pattern(rebuilt) if only else None)
+            if removed:
+                log("Removed %d leftover(s) from earlier builds." % removed)
+        except Exception as error:
+            warn("could not remove leftovers from earlier builds: %s" % error)
 
     log("Done: %d material keys, %d meshes/skies imported%s." % (
         len(materials), len(STATS.built), (", flat look for " + ", ".join(STATS.flat)) if STATS.flat else ""))
@@ -1564,6 +1677,16 @@ def offline_check() -> int:
     check(abs(surface_uv_scale({"tileMeters": 4.0}, [5, 5]) - 0.25) < 1e-9, "implausible dimensions ignored")
     check(abs(surface_uv_scale({"tileMeters": 2.0}, [200, 200]) - 0.5) < 1e-9, "a 10x unit mix-up is ignored")
     check(parse_only(["FloorWood,Table", "night"]) == {"floorwood", "table", "night"}, "--only parsing")
+    pattern = key_asset_pattern(["Table", "FloorWood", ""])
+    check(all(pattern.match(n) for n in ("T_FloorWood_Roughness", "t_floorwood_orm", "MI_SM_Table_3", "T_SM_Table_12_Normal")),
+          "--only prunes the rebuilt keys' own textures and mesh materials")
+    check(not any(pattern.match(n) for n in ("T_FloorWoodDark_ORM", "MI_SM_TableBig_0", "MI_SM_Table", "MI_Table",
+                                               "T_wood_floor_diff_2k", "T_SM_Table_1_Roughness", "T_Brick_ORM")),
+          "--only leaves other keys' and shared assets alone")
+    check(not key_asset_pattern([]).match("T_FloorWood_ORM"), "no rebuilt keys, nothing pruned")
+    check(unreferenced({"mi_old": set(), "t_old": {"mi_old"}, "t_used": {"/game/mi_x"}, "t_chain": {"t_used"},
+                        "t_self": {"t_self"}}) == {"mi_old", "t_old", "t_self"},
+          "only leftovers nothing outside the leftovers uses are removed")
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)

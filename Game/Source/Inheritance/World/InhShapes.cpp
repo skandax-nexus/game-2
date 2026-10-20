@@ -72,23 +72,35 @@ namespace
 	/**
 	 * A cooked game can't compile shaders, so an instanced mesh whose material wasn't saved with the instanced usage
 	 * flag draws the default grid material instead (the editor sets the flag on the fly, which hides this in PIE).
-	 * The art masters always have it; the engine's basic shape material used by the no-art fallback is outside our
-	 * control, so say once, clearly, what a packaged build is showing and why.
+	 */
+	bool IsInstanceable(const UMaterialInterface* Material)
+	{
+		if (!FPlatformProperties::RequiresCookedData())
+		{
+			return true;
+		}
+		const UMaterial* Base = Material ? Material->GetMaterial() : nullptr;
+		return !Base || Base->bUsedWithInstancedStaticMeshes;
+	}
+
+	/**
+	 * The art masters always have the flag; the engine's basic shape material used by the flat fallback is outside our
+	 * control. Callers avoid the problem with InhShapes::CanInstance where that is affordable; for the rest, say once,
+	 * clearly, what a packaged build is showing and why.
 	 */
 	void WarnIfNotInstanceable(UInstancedStaticMeshComponent* Instances)
 	{
 		static bool bWarned = false;
-		if (bWarned || !FPlatformProperties::RequiresCookedData())
+		if (bWarned)
 		{
 			return;
 		}
 		const UMaterialInterface* Applied = Instances->GetMaterial(0);
-		const UMaterial* Base = Applied ? Applied->GetMaterial() : nullptr;
-		if (Base && !Base->bUsedWithInstancedStaticMeshes)
+		if (!IsInstanceable(Applied))
 		{
 			bWarned = true;
-			UE_LOG(LogInheritance, Warning, TEXT("%s isn't marked 'Used with Instanced Static Meshes', so instanced parts show the default material in this build. Run tools/assets/build-art before packaging (docs/ART_PIPELINE.md)."),
-				*Base->GetPathName());
+			UE_LOG(LogInheritance, Warning, TEXT("%s isn't marked 'Used with Instanced Static Meshes', so instanced parts using it show the default material in this build. Run tools/assets/build-art before packaging, and tick that usage on any Fab material an art key points at (docs/ART_PIPELINE.md)."),
+				*GetPathNameSafe(Applied->GetMaterial()));
 		}
 	}
 }
@@ -235,4 +247,16 @@ UInstancedStaticMeshComponent* InhShapes::AddInstancedEmissive(AActor* Owner, US
 		WarnIfNotInstanceable(Instances);
 	}
 	return Instances;
+}
+
+bool InhShapes::CanInstance(FName MaterialKey)
+{
+	UMaterialInterface* Art = InhArt::Material(MaterialKey);
+	return IsInstanceable(Art ? Art : BaseMaterial());
+}
+
+bool InhShapes::CanInstanceEmissive()
+{
+	static const FName EmissiveKey(TEXT("Emissive"));
+	return CanInstance(EmissiveKey);
 }

@@ -17,6 +17,7 @@
 #include "Engine/TextureCube.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Materials/MaterialInterface.h"
 
 // The room is a cutaway diorama: walls on two sides, open at the front (-X), the right (+Y) and the top, standing on a
 // floor slab drawn like an architect's section (dark where it is cut), so the fish market below reads as the storey
@@ -132,6 +133,24 @@ namespace InhRoomParts
 			const bool bArt = !KeyName.IsNone() && InhArt::Material(KeyName) != nullptr;
 			const FString Id = FString::Printf(TEXT("%s|%s|%s|%d"), *GetNameSafe(Mesh), Key ? Key : TEXT(""),
 				bArt ? TEXT("") : *Fallback.ToString(), bCollide ? 1 : 0);
+			if (!InhShapes::CanInstance(KeyName))
+			{
+				// A packaged build that can't draw this look instanced (see InhShapes::CanInstance): the piece on its own
+				// at the same transform, sharing the first such piece's material so one look can still batch.
+				if (UStaticMeshComponent* Part = InhShapes::AddSurface(Owner, Parent, Mesh, Center, Size, KeyName, Fallback, Rotation, bCollide))
+				{
+					UMaterialInterface*& Shared = SingleMaterials.FindOrAdd(Id);
+					if (Shared)
+					{
+						Part->SetMaterial(0, Shared);
+					}
+					else
+					{
+						Shared = Part->GetMaterial(0);
+					}
+				}
+				return;
+			}
 			UInstancedStaticMeshComponent*& Set = Sets.FindOrAdd(Id);
 			if (!Set)
 			{
@@ -146,6 +165,7 @@ namespace InhRoomParts
 		AActor* Owner = nullptr;
 		USceneComponent* Parent = nullptr;
 		TMap<FString, UInstancedStaticMeshComponent*> Sets;
+		TMap<FString, UMaterialInterface*> SingleMaterials;
 	};
 
 	enum class EFit : uint8
@@ -591,20 +611,23 @@ void AInhRoomBuilder::Tick(float DeltaSeconds)
 
 void AInhRoomBuilder::SetLifeProgress(float P)
 {
-	// Keyframes: dusk -> deep night -> dawn (the moment the life ends). AInhAtmosphereFX's dust shaft copies the sun pitch.
-	// The lamps and lit windows are physically bright (the table lamp alone is 55 cd), so the rising sun must be far
-	// brighter than the moon to outshine them through the low-sun haze and pour a visible shaft in at the window.
-	// One light plays both moon and sun: the high moon fades where it hangs, the light swings to the horizon only while
-	// too faint to see (the Sunrise cinematic is still in the lamp-lit room then), and the sun climbs from there. A
-	// straight blend from moon to sun would sink the light through the whole sunrise, like a sunset.
-	struct FSkyKey { float At; float Pitch; float Lux; FLinearColor Color; float Sky; };
+	// Keyframes: dusk -> deep night -> dawn (the moment the life ends). AInhAtmosphereFX's dust shaft copies the light's
+	// direction. The lamps and lit windows are physically bright (the table lamp alone is 55 cd), so the rising sun must
+	// be far brighter than the moon to outshine them through the low-sun haze and pour a visible shaft in at the window.
+	// One light plays both moon and sun. By night it shines from the moon in the harbour's sky (InhLayout::MoonYaw) and
+	// fades there; it swings round to the sunrise only while too faint to see, and the sun climbs from there. A straight
+	// blend from moon to sun would sink the light through the whole sunrise, like a sunset.
+	struct FSkyKey { float At; float Pitch; float Yaw; float Lux; FLinearColor Color; float Sky; };
+	constexpr float NightPitch = -InhLayout::MoonElevation;
+	constexpr float NightYaw = InhLayout::MoonYaw + 180.f;
+	constexpr float DayYaw = InhLayout::SunriseYaw;
 	static const FSkyKey Keys[] = {
-		{ 0.00f, -9.f, 3.5f, FLinearColor(1.f, 0.55f, 0.30f), 0.8f },
-		{ 0.20f, -35.f, 0.6f, FLinearColor(0.55f, 0.65f, 1.f), 0.35f },
-		{ 0.80f, -40.f, 0.5f, FLinearColor(0.50f, 0.60f, 1.f), 0.30f },
-		{ 0.87f, -40.f, 0.03f, FLinearColor(0.50f, 0.60f, 1.f), 0.25f },
-		{ 0.88f, -1.f, 0.03f, FLinearColor(1.f, 0.55f, 0.45f), 0.25f },
-		{ 1.00f, -5.f, 120.f, FLinearColor(1.f, 0.62f, 0.68f), 1.0f },
+		{ 0.00f, -9.f, DayYaw, 3.5f, FLinearColor(1.f, 0.55f, 0.30f), 0.8f },
+		{ 0.20f, NightPitch, NightYaw, 0.6f, FLinearColor(0.55f, 0.65f, 1.f), 0.35f },
+		{ 0.80f, NightPitch, NightYaw, 0.5f, FLinearColor(0.50f, 0.60f, 1.f), 0.30f },
+		{ 0.87f, NightPitch, NightYaw, 0.03f, FLinearColor(0.50f, 0.60f, 1.f), 0.25f },
+		{ 0.88f, -1.f, DayYaw, 0.03f, FLinearColor(1.f, 0.55f, 0.45f), 0.25f },
+		{ 1.00f, -5.f, DayYaw, 120.f, FLinearColor(1.f, 0.62f, 0.68f), 1.0f },
 	};
 	P = FMath::Clamp(P, 0.f, 1.f);
 	Progress = P;
@@ -614,11 +637,17 @@ void AInhRoomBuilder::SetLifeProgress(float P)
 	const FSkyKey& B = Keys[i + 1];
 	const float T = FMath::SmoothStep(0.f, 1.f, (P - A.At) / FMath::Max(B.At - A.At, KINDA_SMALL_NUMBER));
 
-	Sun->SetWorldRotation(FRotator(FMath::Lerp(A.Pitch, B.Pitch, T), InhLayout::SunriseYaw, 0.f));
+	Sun->SetWorldRotation(FRotator(FMath::Lerp(A.Pitch, B.Pitch, T), FMath::Lerp(A.Yaw, B.Yaw, T), 0.f));
 	// Light spans many stops, so it blends in log space: the dawn brightens as the sun climbs, not all at once.
 	Sun->SetIntensity(A.Lux * FMath::Pow(B.Lux / A.Lux, T));
 	Sun->SetLightColor(FMath::Lerp(A.Color, B.Color, T));
 	SkyLight->SetIntensity(FMath::Lerp(A.Sky, B.Sky, T));
+	// The atmosphere draws the light's disk with all its lux in a speck of sky, so even the faint light between moon and
+	// sun would show a disk many stops over the exposure: it is drawn only while the light plays the sun. By night the
+	// moon on screen is the harbour's, and the swing round to the sunrise stays unseen, though the Sunrise is looking out
+	// of the window across the bay just then.
+	const float SunDisk = FMath::Max(1.f - FMath::SmoothStep(0.f, 0.1f, P), FMath::SmoothStep(0.88f, 0.9f, P));
+	Sun->SetAtmosphereSunDiskColorScale(FLinearColor(SunDisk, SunDisk, SunDisk));
 
 	// The grade and the fog follow the light: cool and heavy at night, warm and open at dusk and dawn.
 	const float IntoNight = FMath::SmoothStep(0.f, 0.2f, P);

@@ -64,4 +64,10 @@ namespace InhLayout
 	// --- sky ---
 	/** Yaw (degrees) the dawn sun rises from: it shines in through the window. */
 	inline constexpr float SunriseYaw = 195.f;
+	/**
+	 * Where the moon hangs in the night sky (degrees, as seen from the quay): left of the lighthouse from the water. The
+	 * night light shines from it, so the moonlit town's shadows fall away from the moon on screen.
+	 */
+	inline constexpr float MoonYaw = 48.f;
+	inline constexpr float MoonElevation = 19.f;
 }

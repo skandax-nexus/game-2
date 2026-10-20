@@ -105,6 +105,10 @@ namespace InhHarbourParts
 			Meshes[int32(EShape::Sphere)] = InhShapes::Sphere();
 			Meshes[int32(EShape::Cone)] = InhShapes::Cone();
 			Meshes[int32(EShape::Plane)] = InhShapes::Plane();
+			// The looks with no art key are always flat colours on the engine's basic shape material, which a packaged
+			// build may be unable to instance (InhShapes::CanInstance). They are few (window glass, the tide line), so
+			// they become single parts then. Everything else is drawn by the art build's materials, which instance.
+			bFlatSingles = !InhShapes::CanInstance(NAME_None);
 		}
 
 		UInstancedStaticMeshComponent* Get(EShape Shape, EKit Kit)
@@ -138,9 +142,13 @@ namespace InhHarbourParts
 		/** Size is in centimetres like InhShapes::AddPart (a plane only uses X and Y). */
 		void Add(EShape Shape, EKit Kit, const FVector& Center, const FVector& Size, const FRotator& Rotation = FRotator::ZeroRotator)
 		{
-			if (UInstancedStaticMeshComponent* Set = Get(Shape, Kit))
+			const FVector Scale = Shape == EShape::Plane ? FVector(Size.X / 100.0, Size.Y / 100.0, 1.0) : Size / 100.0;
+			if (bFlatSingles && !KitLooks[int32(Kit)].Key)
 			{
-				const FVector Scale = Shape == EShape::Plane ? FVector(Size.X / 100.0, Size.Y / 100.0, 1.0) : Size / 100.0;
+				AddSingle(Shape, Kit, Center, Scale, Rotation);
+			}
+			else if (UInstancedStaticMeshComponent* Set = Get(Shape, Kit))
+			{
 				Set->AddInstance(FTransform(Rotation, Center, Scale));
 				++NumInstances;
 			}
@@ -150,12 +158,40 @@ namespace InhHarbourParts
 
 		int32 NumSets = 0;
 		int32 NumInstances = 0;
+		int32 NumSingles = 0;
 
 	private:
+		/** One piece as a component of its own, with exactly the transform and look its instance would have had. */
+		void AddSingle(EShape Shape, EKit Kit, const FVector& Center, const FVector& Scale, const FRotator& Rotation)
+		{
+			const FKitLook& Look = KitLooks[int32(Kit)];
+			// AddSurface takes centimetres; a plane gets the instance's unit Z scale too.
+			UStaticMeshComponent* Part = InhShapes::AddSurface(Owner, Parent, Meshes[int32(Shape)], Center, Scale * 100.0, FName(),
+				Look.Fallback, Rotation, false);
+			if (!Part)
+			{
+				return;
+			}
+			Part->SetCastShadow(Look.bCastShadow);
+			// Every piece of one look shares the first one's material, so the renderer can still batch them.
+			UMaterialInterface*& Shared = SingleMaterials[int32(Shape)][int32(Kit)];
+			if (Shared)
+			{
+				Part->SetMaterial(0, Shared);
+			}
+			else
+			{
+				Shared = Part->GetMaterial(0);
+			}
+			++NumSingles;
+		}
+
 		AActor* Owner = nullptr;
 		USceneComponent* Parent = nullptr;
 		UStaticMesh* Meshes[int32(EShape::Count)] = {};
 		UInstancedStaticMeshComponent* Sets[int32(EShape::Count)][int32(EKit::Count)] = {};
+		UMaterialInterface* SingleMaterials[int32(EShape::Count)][int32(EKit::Count)] = {};
+		bool bFlatSingles = false;
 	};
 
 	/** A plane (which faces +Z) turned to face Normal with its local X running up the wall: size it (height, width). */
@@ -377,8 +413,8 @@ struct FInhHarbourBuild
 		BuildFerryman();
 		BuildMara();
 
-		UE_LOG(LogInheritance, Log, TEXT("Harbour built: %d static instances in %d sets, %d lit windows, %d far lights, %d boats, %d gulls."),
-			Kits.NumInstances, Kits.NumSets, H.Windows.Num(), H.FarWindows.Num(), H.Boats.Num(), H.Gulls.Num());
+		UE_LOG(LogInheritance, Log, TEXT("Harbour built: %d static instances in %d sets, %d single parts, %d lit windows, %d far lights, %d boats, %d gulls."),
+			Kits.NumInstances, Kits.NumSets, Kits.NumSingles, H.Windows.Num(), H.FarWindows.Num(), H.Boats.Num(), H.Gulls.Num());
 	}
 
 	FInhArtSet ArtSet(const TCHAR* Key)
@@ -1491,7 +1527,7 @@ struct FInhHarbourBuild
 		// The moon hangs left of the lighthouse as seen from the water.
 		if (H.bEmissiveArt)
 		{
-			const FVector MoonDir = FRotator(19.f, 48.f, 0.f).Vector();
+			const FVector MoonDir = FRotator(InhLayout::MoonElevation, InhLayout::MoonYaw, 0.f).Vector();
 			// Just inside the stars, and about 1.8 degrees across.
 			const float MoonDistance = SkyRadius - 2000.f;
 			const float MoonSize = MoonDistance * 0.032f;
@@ -1520,8 +1556,10 @@ struct FInhHarbourBuild
 		case EMoving::Sail: Set = InhShapes::AddInstanced(&H, H.Root, Cube(), FName(TEXT("Linen")), LinenFallback, false); break;
 		case EMoving::Lamp: Set = InhShapes::AddInstancedEmissive(&H, H.Root, Cube(), FLinearColor(1.f, 0.78f, 0.5f), 14.f); break;
 		case EMoving::ArtRowboat: Set = RowboatMesh ? NewArtInstances(&H, H.Root, RowboatMesh) : nullptr; break;
-		case EMoving::GullBody: Set = InhShapes::AddInstanced(&H, H.Root, Sphere(), NAME_None, FLinearColor(0.80f, 0.81f, 0.83f), false); break;
-		case EMoving::GullWing: Set = InhShapes::AddInstanced(&H, H.Root, Cube(), NAME_None, FLinearColor(0.58f, 0.61f, 0.65f), false); break;
+		// Gulls are flat colours only. Where a packaged build can't instance those (InhShapes::CanInstance) they stay away
+		// rather than circle as grid-material shapes; an empty set is allowed for everywhere below.
+		case EMoving::GullBody: Set = InhShapes::CanInstance(NAME_None) ? InhShapes::AddInstanced(&H, H.Root, Sphere(), NAME_None, FLinearColor(0.80f, 0.81f, 0.83f), false) : nullptr; break;
+		case EMoving::GullWing: Set = InhShapes::CanInstance(NAME_None) ? InhShapes::AddInstanced(&H, H.Root, Cube(), NAME_None, FLinearColor(0.58f, 0.61f, 0.65f), false) : nullptr; break;
 		default: break;
 		}
 		if (Set && (Kind == EMoving::GullBody || Kind == EMoving::GullWing || Kind == EMoving::Lamp))
@@ -1749,17 +1787,17 @@ struct FInhHarbourBuild
 	void BuildMara()
 	{
 		USceneComponent* Mara = H.MaraPivot;
-		// Pale and slender, in a long dress that faintly holds the dawn light.
+		// Pale and slender, in a long dress that catches the dawn light. Lit like her face, not emissive: the art's emissive
+		// master is unlit, and would leave the dress a flat grey cut-out once the sun is up.
 		const FLinearColor Dress(0.62f, 0.67f, 0.72f);
 		const FLinearColor Skin(0.68f, 0.64f, 0.60f);
 		const FLinearColor Hair(0.035f, 0.028f, 0.024f);
-		const float Glow = 0.6f;
-		InhShapes::AddEmissive(&H, Mara, Cone(), FVector(0.f, 0.f, 75.f), FVector(50.f, 46.f, 150.f), Dress, Glow);
-		InhShapes::AddEmissive(&H, Mara, Cylinder(), FVector(0.f, 0.f, 114.f), FVector(21.f, 19.f, 50.f), Dress, Glow);
-		InhShapes::AddEmissive(&H, Mara, Sphere(), FVector(0.f, 0.f, 138.f), FVector(18.f, 30.f, 12.f), Dress, Glow);
+		InhShapes::AddPart(&H, Mara, Cone(), FVector(0.f, 0.f, 75.f), FVector(50.f, 46.f, 150.f), Dress, FRotator::ZeroRotator, false);
+		InhShapes::AddPart(&H, Mara, Cylinder(), FVector(0.f, 0.f, 114.f), FVector(21.f, 19.f, 50.f), Dress, FRotator::ZeroRotator, false);
+		InhShapes::AddPart(&H, Mara, Sphere(), FVector(0.f, 0.f, 138.f), FVector(18.f, 30.f, 12.f), Dress, FRotator::ZeroRotator, false);
 		for (const float Side : { -1.f, 1.f })
 		{
-			InhShapes::AddEmissive(&H, Mara, Cylinder(), FVector(0.f, Side * 13.5f, 112.f), FVector(6.f, 6.f, 52.f), Dress, Glow, FRotator(0.f, 0.f, Side * 5.f));
+			InhShapes::AddPart(&H, Mara, Cylinder(), FVector(0.f, Side * 13.5f, 112.f), FVector(6.f, 6.f, 52.f), Dress, FRotator(0.f, 0.f, Side * 5.f), false);
 		}
 		InhShapes::AddPart(&H, Mara, Cylinder(), FVector(0.f, 0.f, 146.f), FVector(7.f, 7.f, 12.f), Skin, FRotator::ZeroRotator, false);
 		InhShapes::AddPart(&H, Mara, Sphere(), FVector(1.5f, 0.f, 158.f), FVector(18.f, 16.f, 22.f), Skin, FRotator::ZeroRotator, false);

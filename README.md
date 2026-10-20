@@ -26,7 +26,7 @@ The design document this implements is summarised in [`docs/ARCHITECTURE.md`](do
    cd server
    ALLOW_EARLY_SUNRISE=1 npm start     # Windows PowerShell: $env:ALLOW_EARLY_SUNRISE=1; npm start
    ```
-3. **Build the art (optional, recommended).** With the editor closed, run `tools/assets/build-art.sh` (macOS/Linux) or `.\tools\assets\build-art.ps1` (Windows). It downloads CC0 textures, models and skies and imports them; see [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md). Skip it and the game still runs, drawn with simple shapes.
+3. **Build the art (optional, recommended).** With the editor closed, run `tools/assets/build-art.sh` (macOS/Linux) or `.\tools\assets\build-art.ps1` (Windows). It downloads CC0 textures, models and skies and imports them; see [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md). Skip it and the game still runs in the editor, drawn with simple shapes. The phone packaging scripts require it (or `--allow-no-art`).
 4. **Open the game.** Double-click `Game/Inheritance.uproject`. Click **Yes** when it asks to build the C++ module, then press **Play**.
 5. **Put it on a phone.** Follow [docs/MOBILE.md](docs/MOBILE.md).
 
@@ -45,7 +45,7 @@ At your local sunrise the Ferryman rows you out, the Notaries take their 10% tax
 The game is staged like a film, on phones as well as in the editor:
 
 - **A real camera.** One cine camera (Super 35 filmback, 24 to 85 mm lenses, physically based depth of field) orbits the room on a 40 mm lens and racks focus to whatever you tap. It drifts gently when idle and has a slight handheld feel.
-- **Cinematics.** The harbour plays on a slow loop behind the title screen. Each life opens with a flight over the bay, past the lighthouse and in through your window, under a "HOLLOW BAY" title card with the day and the act. After the will, the camera circles the phone with your predecessor's voice note. At sunrise it leans out of the window as the dawn comes up, follows the Ferryman's boat past Mara at the water steps, then fades to white. Cinematics are letterboxed and a tap skips them.
+- **Cinematics.** The harbour plays on a slow loop behind the title screen. Each life opens with a flight over the bay, past the lighthouse and in through your window, under a "HOLLOW BAY" title card with the day and the act. After the will, the camera circles the phone with your predecessor's voice note. At sunrise it leans out of the window as the dawn comes up, follows the Ferryman's boat past Mara at the water steps, then fades to white. Apart from the title loop, cinematics are letterboxed and a tap (or Space on desktop) skips them.
 - **A whole town.** Outside the window, Hollow Bay is built in code: the cobbled quay street and its houses with lit windows, the quay and water steps, a pier with boats rocking on the swell, the lighthouse sweeping its beam, gulls, the far shore climbing its hills, stars and a moon that fade at dawn. Dust floats in the window light, rain comes and goes, and mist drifts over the water.
 - **A film grade.** A filmic tone curve with teal shadows and warm highlights, bloom, lens flares, vignette, a trace of chromatic aberration and fine grain, cooler at night and warmer at dusk and dawn. On desktop there is also Lumen lighting, virtual shadow maps and volumetric fog. Phones get mobile depth of field, bloom and per-device quality profiles.
 - **Sound with no audio files.** The sea, wind, creaking rigging, a bell buoy, gulls at dawn, rain and the sunrise bell are all synthesised as the game runs (`Audio/InhAmbience`).

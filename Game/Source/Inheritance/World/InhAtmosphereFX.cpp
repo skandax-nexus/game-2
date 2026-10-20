@@ -30,18 +30,25 @@ namespace InhAtmosphereParts
 		return FTransform(FQuat::Identity, Location, HiddenScale);
 	}
 
-	/** The sun's pitch through the night, matching the keys in AInhRoomBuilder::SetLifeProgress (dusk, night, moonset, dawn). */
-	float SunPitch(float Progress)
+	/**
+	 * The light's direction through the night, matching the keys in AInhRoomBuilder::SetLifeProgress (the dusk sun, the
+	 * moon, moonset, the swing round to the sunrise, dawn).
+	 */
+	FRotator SunRotation(float Progress)
 	{
-		struct FKey { float At; float Pitch; };
-		static const FKey Keys[] = { { 0.f, -9.f }, { 0.2f, -35.f }, { 0.8f, -40.f }, { 0.87f, -40.f }, { 0.88f, -1.f }, { 1.f, -5.f } };
+		struct FKey { float At; float Pitch; float Yaw; };
+		constexpr float NightPitch = -InhLayout::MoonElevation;
+		constexpr float NightYaw = InhLayout::MoonYaw + 180.f;
+		constexpr float DayYaw = InhLayout::SunriseYaw;
+		static const FKey Keys[] = { { 0.f, -9.f, DayYaw }, { 0.2f, NightPitch, NightYaw }, { 0.8f, NightPitch, NightYaw },
+			{ 0.87f, NightPitch, NightYaw }, { 0.88f, -1.f, DayYaw }, { 1.f, -5.f, DayYaw } };
 		int32 i = 0;
 		while (i < int32(UE_ARRAY_COUNT(Keys)) - 2 && Progress > Keys[i + 1].At)
 		{
 			++i;
 		}
 		const float T = FMath::SmoothStep(0.f, 1.f, (Progress - Keys[i].At) / FMath::Max(Keys[i + 1].At - Keys[i].At, UE_KINDA_SMALL_NUMBER));
-		return FMath::Lerp(Keys[i].Pitch, Keys[i + 1].Pitch, T);
+		return FRotator(FMath::Lerp(Keys[i].Pitch, Keys[i + 1].Pitch, T), FMath::Lerp(Keys[i].Yaw, Keys[i + 1].Yaw, T), 0.f);
 	}
 
 	/** Where rain lands: the street in front of the houses, or the sea beyond the quay edge. */
@@ -79,8 +86,11 @@ void AInhAtmosphereFX::SetLifeProgress(float InProgress)
 	const float IntoDawn = FMath::SmoothStep(0.8f, 1.f, Progress);
 	// Dust shows where light catches it: some at dusk, little by night, the dawn shaft full of it.
 	DustAmount = FMath::Lerp(FMath::Lerp(0.55f, 0.3f, IntoNight), 1.f, IntoDawn);
-	ShaftAmount = FMath::Lerp(FMath::Lerp(0.6f, 0.35f, IntoNight), 1.f, IntoDawn);
-	ShaftDirection = FRotator(InhAtmosphereParts::SunPitch(Progress), InhLayout::SunriseYaw, 0.f).Vector();
+	// The light swings from the moon round to the sunrise while too faint to see, just as the Sunrise looks out of the
+	// window: the shaft empties with the fading moon and fills again with the sun, so it never sweeps round on screen.
+	const float Swinging = FMath::SmoothStep(0.83f, 0.87f, Progress) * (1.f - FMath::SmoothStep(0.88f, 0.9f, Progress));
+	ShaftAmount = FMath::Lerp(FMath::Lerp(0.6f, 0.35f, IntoNight), 1.f, IntoDawn) * (1.f - Swinging);
+	ShaftDirection = InhAtmosphereParts::SunRotation(Progress).Vector();
 	UpdateFogLook();
 }
 
@@ -108,6 +118,12 @@ void AInhAtmosphereFX::Tick(float DeltaSeconds)
 void AInhAtmosphereFX::BuildDust()
 {
 	using namespace InhAtmosphereParts;
+	// Without the art, a packaged build may be unable to instance the flat fallback (InhShapes::CanInstance): then there
+	// is no dust rather than specks of the default grid material, or a hundred components moved every frame.
+	if (!InhShapes::CanInstanceEmissive())
+	{
+		return;
+	}
 	// Tiny cubes: at a centimetre they read as points of light and cost 12 triangles where a sphere costs hundreds.
 	Dust = InhShapes::AddInstancedEmissive(this, Root, InhShapes::Cube(), FLinearColor(1.f, 0.93f, 0.82f), 1.6f);
 	if (!Dust)
@@ -205,6 +221,11 @@ void AInhAtmosphereFX::TickDust(float DeltaSeconds)
 void AInhAtmosphereFX::BuildRain()
 {
 	using namespace InhAtmosphereParts;
+	// As with the dust: no rain at all where the fallback can't be instanced, rather than hundreds of single parts.
+	if (!InhShapes::CanInstanceEmissive())
+	{
+		return;
+	}
 	// Thin streaks that catch the lamplight; a light breeze off the sea slants them a touch.
 	Rain = InhShapes::AddInstancedEmissive(this, Root, InhShapes::Cube(), FLinearColor(0.62f, 0.68f, 0.78f), 0.8f);
 	if (!Rain)
@@ -358,10 +379,14 @@ void AInhAtmosphereFX::UpdateFogLook()
 		return;
 	}
 	// The cards are unlit, so their colour is light they give off: it follows the height fog's in
-	// AInhRoomBuilder::SetLifeProgress, or by night they would glow grey over the dark sea.
+	// AInhRoomBuilder::SetLifeProgress, or by night they would glow grey over the dark sea. The height fog also takes in
+	// the sky's light, which outshines that colour once the sun is up (the dawn sun is some thirty times the dusk one),
+	// so the cards brighten with the sunrise, as the sun's lux climbs: backlit mist glows, where at the dusk level the
+	// sheets would lie over the sun's path on the sea like dark patches.
 	static const FName ColorName(TEXT("Color"));
 	const float Warmth = FMath::Max(1.f - FMath::SmoothStep(0.f, 0.2f, Progress), FMath::SmoothStep(0.8f, 1.f, Progress));
-	FogMaterial->SetVectorParameterValue(ColorName, FMath::Lerp(FLinearColor(0.03f, 0.04f, 0.06f), FLinearColor(0.40f, 0.31f, 0.30f), Warmth));
+	const float Sunlit = FMath::Lerp(1.f, 3.5f, FMath::SmoothStep(0.92f, 1.f, Progress));
+	FogMaterial->SetVectorParameterValue(ColorName, FMath::Lerp(FLinearColor(0.03f, 0.04f, 0.06f), FLinearColor(0.40f, 0.31f, 0.30f) * Sunlit, Warmth));
 	// Thicker towards morning and in the rain; the manifest's 0.35 is the dusk look.
 	static const FName OpacityName(TEXT("Opacity"));
 	const float Opacity = 0.35f * (0.8f + 0.45f * FMath::SmoothStep(0.75f, 1.f, Progress) + 0.3f * RainTarget);

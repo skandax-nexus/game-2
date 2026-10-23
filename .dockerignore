@@ -1,0 +1,7 @@
+server/node_modules
+server/data
+Game/Binaries
+Game/Intermediate
+Game/Saved
+Game/DerivedDataCache
+.git

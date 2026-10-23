@@ -1,0 +1,213 @@
+{
+  "season": 1,
+  "title": "The Reading of the Will",
+  "city": "Hollow Bay",
+  "lengthDays": 56,
+  "actionsPerLife": 10,
+  "voiceNoteMaxSeconds": 30,
+  "notaryTaxPercent": 10,
+  "prologue": {
+    "setting": "You wake in a rented room above a fish market. On the table is a stranger's phone with one voice note.",
+    "voiceNoteTranscript": "I'm sorry for what I left you. Don't trust the Notaries. Find the Ledger."
+  },
+  "acts": [
+    {
+      "id": 1,
+      "name": "The Will",
+      "startDay": 1,
+      "endDay": 14,
+      "summary": "Hollow Bay is run by the Notary Houses, who record every death and tax every inheritance. Learn the city's rules by living them.",
+      "ledgerPageChance": 0.25
+    },
+    {
+      "id": 2,
+      "name": "The Debt",
+      "startDay": 15,
+      "endDay": 35,
+      "summary": "Elias Vane founded Hollow Bay 200 years ago and bargained with the sea. Every lost day feeds him. Choose: Keepers or Breakers.",
+      "ledgerPageChance": 0.35,
+      "unlocksFactions": true
+    },
+    {
+      "id": 3,
+      "name": "The Last Will",
+      "startDay": 36,
+      "endDay": 56,
+      "summary": "The Ledger is scattered across thousands of inheritances. Pages must be handed down life to life. One careless voice note can lose a page forever.",
+      "ledgerPageChance": 0.5
+    }
+  ],
+  "factions": [
+    {
+      "id": "keepers",
+      "name": "The Keepers",
+      "creed": "One-day lives mean no one is trapped by the past. Every heir gets a fresh start."
+    },
+    {
+      "id": "breakers",
+      "name": "The Breakers",
+      "creed": "People deserve to grow old and build lives that last."
+    }
+  ],
+  "characters": [
+    {
+      "id": "elias_vane",
+      "name": "Elias Vane",
+      "title": "The Founder",
+      "bio": "A grieving father who lost his daughter Mara at sea. He made the bargain to bring her back, and has tried to undo it for 200 years."
+    },
+    {
+      "id": "mara_vane",
+      "name": "Mara Vane",
+      "title": "The Drowned Girl",
+      "bio": "Seen only at the waterline at dawn. She is the real reason the curse exists, and she does not want to be saved."
+    },
+    {
+      "id": "orla_thrane",
+      "name": "Judge Orla Thrane",
+      "title": "Head of House Thrane",
+      "bio": "The most powerful Notary. Charming and patient, she has kept one family line alive for 80 years by cheating the inheritance rules."
+    },
+    {
+      "id": "kit_morrow",
+      "name": "Kit Morrow",
+      "title": "Breaker Leader",
+      "bio": "A young dockworker who inherited the first Ledger page. Brave, reckless, and hiding that the page came from someone she betrayed."
+    },
+    {
+      "id": "ferryman",
+      "name": "The Ferryman",
+      "title": "Rower of the Dead",
+      "bio": "A silent figure who rows each dead citizen out at sunrise. The only one who has seen every life. He speaks once per season."
+    }
+  ],
+  "twists": [
+    {
+      "id": "bargain_for_mara",
+      "day": 14,
+      "title": "The bargain was for Mara",
+      "text": "Vane didn't trade the city's tomorrows for his own life. He traded them to bring his drowned daughter back for one day, every day, forever."
+    },
+    {
+      "id": "thrane_cheats_death",
+      "day": 25,
+      "title": "Thrane has been cheating death",
+      "text": "Judge Thrane forges wills so her family's wealth stays inside one bloodline. Some of you have been her family's heirs without knowing it."
+    },
+    {
+      "id": "kit_stole_the_page",
+      "day": 35,
+      "title": "Kit stole the first page",
+      "text": "Kit Morrow got the first Ledger page by letting another citizen drown. That citizen's heir wants revenge."
+    },
+    {
+      "id": "mara_wants_the_curse",
+      "day": 46,
+      "title": "Mara wants the curse to stay",
+      "text": "Breaking the curse means Mara dies for good. At the waterline she begs you to keep it."
+    },
+    {
+      "id": "players_are_the_ledger",
+      "day": 56,
+      "title": "You are the Ledger",
+      "text": "There is no single hidden book. The Ledger is every voice note ever recorded. The Will is read aloud from your own messages."
+    }
+  ],
+  "endings": {
+    "breakers": "The curse breaks. Next season's lives last a full week.",
+    "keepers": "The curse holds. Vane's spirit passes to the faction leader, and a new player becomes the hidden Founder.",
+    "ferryman": "The Ferryman takes Vane's place. Mara and Vane share one last sunrise at the waterline, and the Ferryman rows away.",
+    "finalLine": "Everything I had, I leave to whoever comes next."
+  },
+  "estateTables": {
+    "houses": [
+      { "name": "Room above the fish market", "description": "Salt-stained floorboards, one window, gulls on the sill." },
+      { "name": "Lighthouse keeper's cottage", "description": "A spiral stair and a lamp that hasn't been lit in years." },
+      { "name": "Narrow house on Tallow Lane", "description": "Three floors, every one of them leaning toward the harbour." },
+      { "name": "Notary clerk's flat", "description": "Ledgers stacked to the ceiling. None of them the one you want." },
+      { "name": "Boathouse on the north quay", "description": "It smells of tar and something older." },
+      { "name": "Faded mansion on Vane Hill", "description": "Too many rooms, most of them locked from the inside." }
+    ],
+    "creditors": [
+      "House Thrane",
+      "House Gall",
+      "House Merrow",
+      "The Fishmongers' Guild",
+      "A moneylender called Pike",
+      "The harbourmaster",
+      "Widow Ashcombe"
+    ],
+    "rivals": [
+      "the Salt Street gang",
+      "a clerk of House Gall",
+      "the night ferry crew",
+      "a pawnbroker named Lusk",
+      "your predecessor's ex-partner",
+      "a Breaker zealot",
+      "a Keeper informant"
+    ],
+    "feudReasons": [
+      "an unpaid wager",
+      "a forged signature",
+      "a stolen boat",
+      "an insult at the Reading of a Will",
+      "a broken engagement",
+      "a burned warehouse"
+    ],
+    "items": [
+      { "kind": "trinket", "name": "Brass pocket watch", "value": 40, "description": "Stopped at 5:12, the minute of last sunrise." },
+      { "kind": "trinket", "name": "Jar of sea glass", "value": 15, "description": "Every piece is green except one red shard." },
+      { "kind": "trinket", "name": "Silver christening spoon", "value": 60, "description": "Engraved with initials that aren't yours." },
+      { "kind": "property", "name": "Share in a fishing boat", "value": 220, "description": "The Gull's Mercy. One quarter of her is yours." },
+      { "kind": "property", "name": "Market stall licence", "value": 150, "description": "Stamped by House Merrow. Expires at sunrise, like everything." },
+      { "kind": "trinket", "name": "Oilskin coat", "value": 25, "description": "The pockets are full of someone else's receipts." },
+      { "kind": "trinket", "name": "Notary's wax seal", "value": 90, "description": "House Thrane. You should not have this." },
+      { "kind": "property", "name": "Key to a harbour locker", "value": 70, "description": "Locker 41. Nobody remembers what's in it." }
+    ],
+    "clues": [
+      { "title": "A torn receipt", "text": "Paid to the Ferryman: 'one crossing, return.' There are no return crossings." },
+      { "title": "Chalk marks on the door", "text": "Three tallies, then a fourth crossed out. Someone was counting heirs." },
+      { "title": "A name in the margin", "text": "Elias Vane, written in a hand that isn't the owner's, in every book on the shelf." },
+      { "title": "The lighthouse logbook", "text": "The lamp was last lit the night a girl drowned, two hundred years ago." },
+      { "title": "A Notary's letter", "text": "'The bloodline must hold. Forge the next one as before.' Signed with an O." },
+      { "title": "Wet footprints", "text": "Small, bare footprints leading from the waterline to your door. They stop at the threshold." },
+      { "title": "A dockworker's IOU", "text": "'Kit, I'll pay you back when the tide turns.' The tide never turned for him." },
+      { "title": "A map of the old harbour", "text": "One pier is drawn that was never built. It ends at a door in the sea." }
+    ],
+    "ledgerPageTexts": [
+      "To the sea I give the city's tomorrows. To my daughter, one more dawn.",
+      "Let every citizen keep a single day, and let that day be enough.",
+      "The Notaries will record what passes. They must never record what is lost.",
+      "Should the Will be read entire, my debt is paid, and I may sleep.",
+      "Whoever holds these pages holds my memory. Do not hold it long.",
+      "Mara, if they read this, I am sorry. I could not let you stay.",
+      "The Ferryman alone may take my place, and only if he is asked kindly."
+    ],
+    "personalStories": [
+      {
+        "kind": "unfinished_letter",
+        "title": "The unfinished letter",
+        "text": "A love letter, never finished. Deliver it, or burn it.",
+        "item": { "kind": "letter", "name": "Unfinished love letter", "value": 0, "description": "'My dearest — I should have told you before the' ... it stops there." }
+      },
+      {
+        "kind": "missing_child",
+        "title": "The missing child",
+        "text": "A note on the pillow: 'Find my son before sunrise.'",
+        "clue": { "title": "Find my son before sunrise", "text": "He was last seen near the north quay, asking about the Ferryman." }
+      },
+      {
+        "kind": "family_secret",
+        "title": "The family secret",
+        "text": "A locked box that only opens after five heirs in a row choose to keep it.",
+        "item": { "kind": "box", "name": "Locked iron box", "value": 0, "description": "Five keyholes. Some of them are already turned." }
+      },
+      {
+        "kind": "revenge_chain",
+        "title": "The revenge chain",
+        "text": "A murder in one life makes a hunter in the next, until someone forgives.",
+        "feud": { "rival": "the heir of a drowned man", "reason": "a death your predecessor caused", "severity": "blood" }
+      }
+    ]
+  }
+}

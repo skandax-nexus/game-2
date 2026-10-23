@@ -1,0 +1,33 @@
+# Unreal Engine
+Game/Binaries/
+Game/Build/
+Game/DerivedDataCache/
+Game/Intermediate/
+Game/Saved/
+Game/Platforms/
+Game/.vs/
+Game/*.sln
+Game/*.xcworkspace
+Game/.idea/
+Game/.vscode/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.suo
+*.xcodeproj
+
+# Packaged builds
+Builds/
+
+# Python bytecode (editor scripts in Game/Content/Python, tools/assets)
+__pycache__/
+*.pyc
+
+# Server
+server/node_modules/
+server/data/
+
+# OS
+.DS_Store
+Thumbs.db

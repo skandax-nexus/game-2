@@ -25,6 +25,18 @@ It uses the real season file (`Game/Content/Data/Story/Season1.json`) and a Java
 | Progress | server | this browser only (`localStorage`) |
 | Season | one real day per life | a Day slider in City to explore all 56 days |
 
+## Run it on your computer
+
+You need [Node.js](https://nodejs.org) 18 or newer. From the repository folder:
+
+```bash
+node web-preview/serve.mjs
+```
+
+Then open **http://localhost:5173**. To play on your phone too, run `node web-preview/serve.mjs --lan` and open the second address it prints, from a phone on the same Wi-Fi. Use `--port 8000` if 5173 is taken.
+
+No Node? Python works too: `python -m http.server 5173 --directory web-preview`. The page needs internet access the first time, to load three.js and the fonts.
+
 ## Editing
 
 Edit `index.template.html`, then rebuild so the story file is embedded:

@@ -21,7 +21,7 @@ The design document this implements is summarised in [`docs/ARCHITECTURE.md`](do
 
 ## Try it in a browser
 
-`web-preview/index.html` is a playable browser version: the cinematic fly-in, the Reading of the Will, the room, your ten actions, your legacy and the sunrise, using the same story file and rules. Open it in any modern browser. See [web-preview/README.md](web-preview/README.md) for how it differs from the phone game.
+`web-preview/index.html` is a playable browser version: the cinematic fly-in, the Reading of the Will, the room, your ten actions, your legacy and the sunrise, using the same story file and rules. Run `node web-preview/serve.mjs` and open http://localhost:5173. See [web-preview/README.md](web-preview/README.md) for phone testing and how it differs from the phone game.
 
 ## Quick start
 
